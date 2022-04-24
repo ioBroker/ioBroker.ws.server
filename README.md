@@ -1,4 +1,4 @@
-# ioBroker.ws.server
+# @iobroker/ws-server
 
 This library is used for communication with front-end via pure web-sockets.
 
