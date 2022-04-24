@@ -1,7 +1,7 @@
 {
   "name": "@iobroker/ws-server",
   "version": "1.0.1",
-  "description": "ioBroker server side web sockets",
+  "description": "ioBroker server-side web sockets",
   "author": {
     "name": "bluefox",
     "email": "dogafox@gmail.com"
