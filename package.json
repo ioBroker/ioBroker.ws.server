@@ -1,10 +1,13 @@
 {
-  "name": "iobroker.ws.server",
+  "name": "@iobroker/ws-server",
   "version": "1.0.1",
   "description": "ioBroker server side web sockets",
   "author": {
     "name": "bluefox",
     "email": "dogafox@gmail.com"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "homepage": "https://github.com/ioBroker/ioBroker.ws.server",
   "keywords": [

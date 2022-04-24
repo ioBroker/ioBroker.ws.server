@@ -9,7 +9,7 @@ It is used normally together with @iobroker/ws on browser side, and it is not co
 ## Usage
 ```
 const http = require('http');
-const socket = require('./ws');
+const socket = require('@iobroker/ws-server');
 
 const requestListener = function (req, res) {
   res.writeHead(200);
@@ -19,7 +19,7 @@ const requestListener = function (req, res) {
 // create web server
 const webServer    = http.createServer(requestListener);
 // create web socket server
-const socketServer = socket.listen(webServer, {pingInterval: 120000, pingTimeout: 30000});
+const socketServer = socket.listen(webServer);
 
 // install event handlers on socket connection
 function onConnection(socket, initDone) {
@@ -47,10 +47,14 @@ webServer.listen(5000);
 
 <!--
 	Placeholder for the next version (at the beginning of the line):
-	### __WORK IN PROGRESS__
+	### **WORK IN PROGRESS**
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) renamed package into `@iobroker/ws-server` 
+* (bluefox) added error handlers 
+
 ### 1.0.1 (2022-01-30)
 * (bluefox) initial commit
 
