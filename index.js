@@ -337,7 +337,8 @@ function SocketIO (server) {
     };
 
     this.sockets = {
-        connected: socketsList,
+        connected: socketsList, // for socket.io 2.0 compatibility
+        sockets: socketsList, // for socket.io 4.0 compatibility
         emit: (arg1, arg2, arg3, arg4, arg5) =>
             socketsList.forEach(socket =>
                 socket.emit(arg1, arg2, arg3, arg4, arg5)),
@@ -356,7 +357,6 @@ function SocketIO (server) {
     this.ioBroker = true;
 }
 
-module.exports = {
-    listen: server => new SocketIO(server),
-    SocketIO
-};
+module.exports = server => new SocketIO(server);
+module.exports.SocketIO = SocketIO;
+module.exports.listen = server => new SocketIO(server);

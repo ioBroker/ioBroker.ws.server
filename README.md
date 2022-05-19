@@ -51,6 +51,9 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Support interface of socket.io 4.0
+
 ### 2.0.0 (2022-04-24)
 * (bluefox) renamed package into `@iobroker/ws-server` 
 * (bluefox) added error handlers
