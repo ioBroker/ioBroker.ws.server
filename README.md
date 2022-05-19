@@ -51,7 +51,7 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 2.1.0 (2022-05-19)
 * (bluefox) Support interface of socket.io 4.0
 
 ### 2.0.0 (2022-04-24)
