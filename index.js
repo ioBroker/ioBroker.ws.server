@@ -134,12 +134,12 @@ function Socket(ws, sessionID, name) {
         let message = isBinary ? data : data.toString();
 
         if (!message || typeof message !== 'string') {
-            return console.error('Received invalid message: ' + JSON.stringify(message));
+            return console.error(`Received invalid message: ${JSON.stringify(message)}`);
         }
         try {
             message = JSON.parse(message);
         } catch (e) {
-            return console.error('Received invalid message: ' + JSON.stringify(message));
+            return console.error(`Received invalid message: ${JSON.stringify(message)}`);
         }
         const [type, id, name, args] = message;
 
@@ -155,7 +155,7 @@ function Socket(ws, sessionID, name) {
         } else if (type === MESSAGE_TYPES.PONG) {
             // lastPong saved
         } else {
-            console.log('Received unknown message type: ' + type);
+            console.log(`Received unknown message type: ${type}`);
         }
     });
 
