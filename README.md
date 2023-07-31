@@ -51,6 +51,9 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (bluefox) Packages updated
+
 ### 2.1.0 (2022-05-19)
 * (bluefox) Support interface of socket.io 4.0
 
@@ -64,7 +67,7 @@ webServer.listen(5000);
 ## License
 The MIT License (MIT)
 
-Copyright (c) 2020-2022 Bluefox <dogafox@gmail.com>
+Copyright (c) 2020-2023 Bluefox <dogafox@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

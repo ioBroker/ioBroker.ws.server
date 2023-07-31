@@ -262,7 +262,7 @@ function SocketIO (server) {
                     if (handlers.error) {
                         handlers.error.forEach(cb => cb('error', error));
                     } else {
-                        console.error('Web socket error: ' + error);
+                        console.error(`Web socket error: ${error}`);
                     }
                     ws && ws.destroy && ws.destroy();
                 });
@@ -270,8 +270,8 @@ function SocketIO (server) {
                 // install handlers
                 if (handlers.connection && handlers.connection.length) {
                     // we have a race condition here.
-                    // If the user is not admin it will be requested for him the rights and no handlers will be installed.
-                    // So we must be sure, that all event handlers are installed before sending ___ready___.
+                    // If the user is not admin, it will be requested for him the rights and no handlers will be installed.
+                    // So we must be sure that all event handlers are installed before sending ___ready___.
                     let timeout = setTimeout(() => {
                         timeout = null;
                         socket.emit('___ready___');
@@ -282,7 +282,7 @@ function SocketIO (server) {
                         if (timeout) {
                             clearTimeout(timeout);
                             timeout = null;
-                            // say to client we are ready
+                            // say to a client we are ready
                             socket.emit('___ready___');
                         }
                     }));
@@ -296,7 +296,7 @@ function SocketIO (server) {
                         request.socket.remoteAddress ||
                         (request.connection.socket ? request.connection.socket.remoteAddress : null);
 
-                    handlers.error && handlers.error.forEach(cb => cb('error', 'No sid found from ' + ip));
+                    handlers.error && handlers.error.forEach(cb => cb('error', `No sid found from ${ip}`));
                 } else {
                     handlers.error && handlers.error.forEach(cb => cb('error', 'No sid found'));
                 }
@@ -313,7 +313,7 @@ function SocketIO (server) {
         if (handlers.error) {
             handlers.error.forEach(cb => cb('error', error));
         } else {
-            console.error('Web socket server error: ' + error);
+            console.error(`Web socket server error: ${error}`);
         }
     });
 
