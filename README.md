@@ -51,7 +51,7 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 2.1.1 (2023-07-31)
 * (bluefox) Packages updated
 
 ### 2.1.0 (2022-05-19)
