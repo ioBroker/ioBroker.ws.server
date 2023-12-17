@@ -51,7 +51,7 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 2.1.2 (2023-12-17)
 * (foxriver76) increase maximum message size from 100 MB to 500 MB
 
 ### 2.1.1 (2023-07-31)
