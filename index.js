@@ -4,8 +4,11 @@
 /* jshint -W061 */
 'use strict';
 
-const WebSocket     = require('ws');
 const querystring   = require('querystring');
+const { WebSocketServer } = require("ws");
+
+/** Maximum message size which server accepts */
+const MAX_PAYLOAD = 524_288_000;
 
 const MESSAGE_TYPES = {
     MESSAGE: 0,
@@ -181,7 +184,7 @@ function SocketIO (server) {
 
     const socketsList = [];
 
-    const wss = new WebSocket.Server({
+    const wss = new WebSocketServer({
         server,
         verifyClient: function (info, done) {
             if (run.length) {
@@ -208,7 +211,8 @@ function SocketIO (server) {
             },
             clientNoContextTakeover: true,
             serverNoContextTakeover: true
-        }
+        },
+        maxPayload: MAX_PAYLOAD
     });
 
     wss.on('connection', (ws, request) => {

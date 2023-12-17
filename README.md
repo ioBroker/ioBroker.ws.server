@@ -51,6 +51,9 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+* (foxriver76) increase maximum message size from 100 MB to 500 MB
+
 ### 2.1.1 (2023-07-31)
 * (bluefox) Packages updated
 
