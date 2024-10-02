@@ -52,8 +52,7 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-
-### **WORK IN PROGRESS**
+### 3.0.0 (2024-10-02)
 
 -   (@GermanBluefox) Package was rewritten with typescript
 -   BREAKING CHANGE: import of SocketIO class changed (see example above)
