@@ -1,15 +1,16 @@
 # @iobroker/ws-server
 
-This library is used for communication with front-end via pure web-sockets.
+This library is used for communication with the front-end via pure web-sockets.
 
-It simulates socket.io interface.
+It simulates `socket.io` interface.
 
-It is used normally together with @iobroker/ws on browser side, and it is not compatible with socket.io.client library 
+It is used normally together with `@iobroker/ws` on the browser side, and it is not compatible with `socket.io.client` library.
 
 ## Usage
-```
-const http = require('http');
-const socket = require('@iobroker/ws-server');
+
+```js
+const http = require('node:http');
+const { SocketIO } = require('@iobroker/ws-server');
 
 const requestListener = function (req, res) {
   res.writeHead(200);
@@ -19,21 +20,21 @@ const requestListener = function (req, res) {
 // create web server
 const webServer    = http.createServer(requestListener);
 // create web socket server
-const socketServer = socket.listen(webServer);
+const socketServer = new SocketIO(webServer);
 
 // install event handlers on socket connection
 function onConnection(socket, initDone) {
     console.log('==> Connected IP: ' + socket.connection.remoteAddress);
-    
-    socket.on('message', function (data, cb) {
+
+    socket.on('customMessage', function (data, cb) {
         console.log('Received ' + data);
         cb(data + 1);
     });
-    
+
     socket.on('disconnect', function (error) {
         console.log(`<== Disconnect from ${socket.connection.remoteAddress}: ${error}`);
     });
-    
+
     initDone && initDone();
 }
 
@@ -51,26 +52,38 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+
+### **WORK IN PROGRESS**
+
+-   (@GermanBluefox) Package was rewritten with typescript
+-   BREAKING CHANGE: import of SocketIO class changed (see example above)
+
 ### 2.1.2 (2023-12-17)
-* (foxriver76) increase maximum message size from 100 MB to 500 MB
+
+-   (foxriver76) increase maximum message size from 100 MB to 500 MB
 
 ### 2.1.1 (2023-07-31)
-* (bluefox) Packages updated
+
+-   (@GermanBluefox) Packages updated
 
 ### 2.1.0 (2022-05-19)
-* (bluefox) Support interface of socket.io 4.0
+
+-   (@GermanBluefox) Support interface of socket.io 4.0
 
 ### 2.0.0 (2022-04-24)
-* (bluefox) renamed package into `@iobroker/ws-server` 
-* (bluefox) added error handlers
+
+-   (@GermanBluefox) renamed package into `@iobroker/ws-server`
+-   (@GermanBluefox) added error handlers
 
 ### 1.0.1 (2022-01-30)
-* (bluefox) initial commit
+
+-   (@GermanBluefox) initial commit
 
 ## License
+
 The MIT License (MIT)
 
-Copyright (c) 2020-2023 Bluefox <dogafox@gmail.com>
+Copyright (c) 2020-2024 Bluefox <dogafox@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
