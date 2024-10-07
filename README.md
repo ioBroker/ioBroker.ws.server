@@ -52,6 +52,10 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+   
+-   (@GermanBluefox) Corrected error with session ID and authentication
+
 ### 3.0.0 (2024-10-02)
 
 -   (@GermanBluefox) Package was rewritten with typescript

@@ -20,9 +20,15 @@ export type SocketEventHandler = (...args: any[]) => void;
 
 class Socket {
     public ws: WebSocket;
-    private id: number;
+    public id: string; // session ID
+    public _secure: boolean = false;
+    public _sessionID: string;
+
+    public _acl: Record<string, any> = null;
+
+    private messageId: number = 0;
     private _name: string;
-    private conn: { request: { sessionID: number } };
+    public conn: { request: { sessionID: string } };
     private pingInterval: NodeJS.Timeout | null;
     private readonly handlers: Record<string, SocketEventHandler[]>;
     private lastPong: number = Date.now();
@@ -30,18 +36,13 @@ class Socket {
 
     public query: ParsedUrlQuery | null = null;
 
-    constructor(
-        ws: WebSocket,
-        options: {
-            remoteAddress: string;
-            query?: ParsedUrlQuery;
-        },
-    ) {
+    constructor(ws: WebSocket, sessionID: string, name: string, remoteAddress: string) {
         this.ws = ws;
-        this._name = options.query?.name as string;
-        this.connection = { remoteAddress: options.remoteAddress };
+        this._name = name;
+        this.connection = { remoteAddress };
         this.handlers = {};
-        this.id = parseInt(options.query.sid as string, 10);
+        this.id = sessionID;
+        this._sessionID = this.id; // back compatibility
 
         // simulate interface of socket.io
         this.conn = {
@@ -119,11 +120,14 @@ class Socket {
     }
 
     emit(name: string, ...args: any[]): void {
-        this.id++;
+        this.messageId++;
+        if (this.messageId >= 0xffffffff) {
+            this.messageId = 1;
+        }
         if (!args?.length) {
-            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name]));
+            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.messageId, name]));
         } else {
-            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name, args]));
+            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.messageId, name, args]));
         }
     }
 
@@ -254,11 +258,15 @@ export class SocketIO {
                     query = null;
                 }
 
-                if (query?.sid) {
-                    const socket = new Socket(ws, {
-                        query,
-                        remoteAddress: request.socket.remoteAddress,
-                    });
+                // do not write here query?.sid otherwise typescript thinks, that query could be null below
+                if (query && query.sid) {
+                    const socket = new Socket(
+                        ws,
+                        // @ts-expect-error pass the sessionID of HTTP request to socket
+                        request.sessionID || query.sid,
+                        query.name as string,
+                        request.socket.remoteAddress,
+                    );
                     this.socketsList.push(socket);
                     this.sockets.engine.clientsCount = this.socketsList.length;
 
