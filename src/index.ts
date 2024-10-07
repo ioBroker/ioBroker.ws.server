@@ -27,18 +27,19 @@ class Socket {
     public _acl: Record<string, any> = null;
 
     private messageId: number = 0;
-    private _name: string;
+    public _name: string;
     public conn: { request: { sessionID: string } };
     private pingInterval: NodeJS.Timeout | null;
     private readonly handlers: Record<string, SocketEventHandler[]>;
     private lastPong: number = Date.now();
     public connection: { remoteAddress: string };
 
-    public query: ParsedUrlQuery | null = null;
+    public query: ParsedUrlQuery;
 
-    constructor(ws: WebSocket, sessionID: string, name: string, remoteAddress: string) {
+    constructor(ws: WebSocket, sessionID: string, query: ParsedUrlQuery, remoteAddress: string) {
         this.ws = ws;
-        this._name = name;
+        this._name = query.name as string;
+        this.query = query;
         this.connection = { remoteAddress };
         this.handlers = {};
         this.id = sessionID;
@@ -264,7 +265,7 @@ export class SocketIO {
                         ws,
                         // @ts-expect-error pass the sessionID of HTTP request to socket
                         request.sessionID || query.sid,
-                        query.name as string,
+                        query,
                         request.socket.remoteAddress,
                     );
                     this.socketsList.push(socket);
