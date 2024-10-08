@@ -5,20 +5,25 @@ import type { Server as HTTPSServer } from 'node:https';
 export type SocketEventHandler = (...args: any[]) => void;
 declare class Socket {
     ws: WebSocket;
-    private id;
-    private _name;
-    private conn;
+    id: string;
+    _secure: boolean;
+    _sessionID: string;
+    _acl: Record<string, any>;
+    private messageId;
+    _name: string;
+    conn: {
+        request: {
+            sessionID: string;
+        };
+    };
     private pingInterval;
     private readonly handlers;
     private lastPong;
     connection: {
         remoteAddress: string;
     };
-    query: ParsedUrlQuery | null;
-    constructor(ws: WebSocket, options: {
-        remoteAddress: string;
-        query?: ParsedUrlQuery;
-    });
+    query: ParsedUrlQuery;
+    constructor(ws: WebSocket, sessionID: string, query: ParsedUrlQuery, remoteAddress: string);
     on(name: string, cb: SocketEventHandler): void;
     off(name: string, cb: SocketEventHandler): void;
     emit(name: string, ...args: any[]): void;

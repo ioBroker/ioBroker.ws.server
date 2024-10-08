@@ -14,20 +14,26 @@ const MESSAGE_TYPES = {
 const DEBUG = false;
 class Socket {
     ws;
-    id;
+    id; // session ID
+    _secure = false;
+    _sessionID;
+    _acl = null;
+    messageId = 0;
     _name;
     conn;
     pingInterval;
     handlers;
     lastPong = Date.now();
     connection;
-    query = null;
-    constructor(ws, options) {
+    query;
+    constructor(ws, sessionID, query, remoteAddress) {
         this.ws = ws;
-        this._name = options.query?.name;
-        this.connection = { remoteAddress: options.remoteAddress };
+        this._name = query.name;
+        this.query = query;
+        this.connection = { remoteAddress };
         this.handlers = {};
-        this.id = parseInt(options.query.sid, 10);
+        this.id = sessionID;
+        this._sessionID = this.id; // back compatibility
         // simulate interface of socket.io
         this.conn = {
             request: { sessionID: this.id },
@@ -102,12 +108,15 @@ class Socket {
         }
     }
     emit(name, ...args) {
-        this.id++;
+        this.messageId++;
+        if (this.messageId >= 0xffffffff) {
+            this.messageId = 1;
+        }
         if (!args?.length) {
-            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name]));
+            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.messageId, name]));
         }
         else {
-            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.id, name, args]));
+            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.messageId, name, args]));
         }
     }
     responseWithCallback(name, id, ...args) {
@@ -205,11 +214,11 @@ class SocketIO {
                 catch {
                     query = null;
                 }
-                if (query?.sid) {
-                    const socket = new Socket(ws, {
-                        query,
-                        remoteAddress: request.socket.remoteAddress,
-                    });
+                // do not write here query?.sid otherwise typescript thinks, that query could be null below
+                if (query && query.sid) {
+                    const socket = new Socket(ws, 
+                    // @ts-expect-error pass the sessionID of HTTP request to socket
+                    request.sessionID || query.sid, query, request.socket.remoteAddress);
                     this.socketsList.push(socket);
                     this.sockets.engine.clientsCount = this.socketsList.length;
                     ws.onclose = () => {
