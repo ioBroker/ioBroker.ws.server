@@ -7,7 +7,7 @@ declare class Socket {
     ws: WebSocket;
     id: string;
     _secure: boolean;
-    _sessionID: string;
+    _sessionID: string | undefined;
     _acl: Record<string, any>;
     private messageId;
     _name: string;
