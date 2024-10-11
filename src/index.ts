@@ -21,8 +21,10 @@ export type SocketEventHandler = (...args: any[]) => void;
 class Socket {
     public ws: WebSocket;
     public id: string; // session ID
+    // this variable is used by @iobroker/socket-classes to store the auth flag
     public _secure: boolean = false;
-    public _sessionID: string;
+    // this variable is used by @iobroker/socket-classes to store the sessionID
+    public _sessionID: string | undefined;
 
     public _acl: Record<string, any> = null;
 
@@ -42,12 +44,10 @@ class Socket {
         this.query = query;
         this.connection = { remoteAddress };
         this.handlers = {};
-        this.id = sessionID;
-        this._sessionID = this.id; // back compatibility
 
         // simulate interface of socket.io
         this.conn = {
-            request: { sessionID: this.id },
+            request: { sessionID },
         };
 
         this.pingInterval = setInterval(() => {

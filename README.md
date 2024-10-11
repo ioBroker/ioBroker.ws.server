@@ -52,9 +52,10 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-### 3.0.3 (2024-10-08)
+### **WORK IN PROGRESS**
    
 -   (@GermanBluefox) Corrected error with session ID and authentication
+-   (@GermanBluefox) Increased a major version to have a clear indicator for the new package
 
 ### 3.0.0 (2024-10-02)
 
