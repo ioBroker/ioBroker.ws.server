@@ -29,7 +29,7 @@
     "@iobroker/eslint-config": "^0.1.6",
     "@types/node": "^22.7.5",
     "@types/ws": "^8.5.12",
-    "puppeteer": "^23.5.3",
+    "puppeteer": "^23.6.1",
     "@iobroker/ws": "^2.0.0",
     "chai": "^4.5.0",
     "mocha": "^10.7.3",
