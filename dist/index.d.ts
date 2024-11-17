@@ -7,6 +7,7 @@ declare class Socket {
     ws: WebSocket;
     id: string;
     _secure: boolean;
+    /** @deprecated, use id */
     _sessionID: string | undefined;
     _acl: Record<string, any>;
     private messageId;

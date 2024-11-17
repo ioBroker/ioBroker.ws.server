@@ -18,6 +18,7 @@ class Socket {
     // this variable is used by @iobroker/socket-classes to store the auth flag
     _secure = false;
     // this variable is used by @iobroker/socket-classes to store the sessionID
+    /** @deprecated, use id */
     _sessionID;
     _acl = null;
     messageId = 0;
@@ -34,6 +35,8 @@ class Socket {
         this.query = query;
         this.connection = { remoteAddress };
         this.handlers = {};
+        this.id = sessionID;
+        this._sessionID = this.id; // back compatibility
         // simulate interface of socket.io
         this.conn = {
             request: { sessionID },

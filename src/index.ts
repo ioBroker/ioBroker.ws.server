@@ -23,9 +23,9 @@ class Socket {
     public id: string; // session ID
     // this variable is used by @iobroker/socket-classes to store the auth flag
     public _secure: boolean = false;
-    // this variable is used by @iobroker/socket-classes to store the sessionID
+    // this variable is used by @iobroker/socket-classes to store the sessionID by authentication
     public _sessionID: string | undefined;
-
+    // this variable is used by @iobroker/socket-classes
     public _acl: Record<string, any> = null;
 
     private messageId: number = 0;
@@ -44,6 +44,7 @@ class Socket {
         this.query = query;
         this.connection = { remoteAddress };
         this.handlers = {};
+        this.id = sessionID;
 
         // simulate interface of socket.io
         this.conn = {
