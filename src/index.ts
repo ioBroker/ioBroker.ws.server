@@ -61,7 +61,15 @@ export class Socket {
     public _sessionID: string | undefined;
     // this variable is used by @iobroker/socket-classes
     public _acl: SocketACL | null = null;
+    // this variable is used by @iobroker/socket-classes
+    public subscribe: {
+        fileChange: { regex: RegExp; pattern: string }[];
+        stateChange: { regex: RegExp; pattern: string }[];
+        objectChange: { regex: RegExp; pattern: string }[];
+        log: { regex: RegExp; pattern: string }[];
+    } | undefined = undefined;
 
+    // this variable is used by @iobroker/socket-classes
     public _name: string;
     public conn: { request: { sessionID: string; pathname: string, query?: ParsedUrlQuery } };
     public connection: { remoteAddress: string };

@@ -2,13 +2,65 @@ import { type ParsedUrlQuery } from 'node:querystring';
 import type { IncomingMessage, Server as HTTPServer } from 'node:http';
 import type { Server as HTTPSServer } from 'node:https';
 export type SocketEventHandler = (...args: any[]) => void;
+export interface SocketACL {
+    user: `system.user.${string}`;
+    groups: `system.group.${string}`[];
+    object?: {
+        read: boolean;
+        list: boolean;
+        write: boolean;
+        delete: boolean;
+    };
+    state?: {
+        list: boolean;
+        read: boolean;
+        write: boolean;
+        delete: boolean;
+        create: boolean;
+    };
+    users?: {
+        create: boolean;
+        delete: boolean;
+        write: boolean;
+    };
+    other?: {
+        http: boolean;
+        execute: boolean;
+        sendto: boolean;
+    };
+    file?: {
+        list: boolean;
+        create: boolean;
+        write: boolean;
+        read: boolean;
+        delete: boolean;
+    };
+}
 export declare class Socket {
     #private;
     ws: WebSocket;
     id: string;
     _secure: boolean;
     _sessionID: string | undefined;
-    _acl: Record<string, any>;
+    _acl: SocketACL | null;
+    subscribe: {
+        fileChange: {
+            regex: RegExp;
+            pattern: string;
+        }[];
+        stateChange: {
+            regex: RegExp;
+            pattern: string;
+        }[];
+        objectChange: {
+            regex: RegExp;
+            pattern: string;
+        }[];
+        log: {
+            regex: RegExp;
+            pattern: string;
+        }[];
+    } | undefined;
     _name: string;
     conn: {
         request: {

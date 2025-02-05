@@ -21,6 +21,9 @@ class Socket {
     _sessionID;
     // this variable is used by @iobroker/socket-classes
     _acl = null;
+    // this variable is used by @iobroker/socket-classes
+    subscribe = undefined;
+    // this variable is used by @iobroker/socket-classes
     _name;
     conn;
     connection;
