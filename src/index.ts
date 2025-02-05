@@ -17,6 +17,41 @@ const DEBUG = false;
 
 export type SocketEventHandler = (...args: any[]) => void;
 
+export interface SocketACL {
+    user: `system.user.${string}`;
+    groups: `system.group.${string}`[];
+    object?: {
+        read: boolean;
+        list: boolean;
+        write: boolean;
+        delete: boolean;
+    };
+    state?: {
+        list: boolean;
+        read: boolean;
+        write: boolean;
+        delete: boolean;
+        create: boolean;
+    };
+    users?: {
+        create: boolean;
+        delete: boolean;
+        write: boolean;
+    };
+    other?: {
+        http: boolean;
+        execute: boolean;
+        sendto: boolean;
+    };
+    file?: {
+        list: boolean;
+        create: boolean;
+        write: boolean;
+        read: boolean;
+        delete: boolean;
+    };
+}
+
 export class Socket {
     public ws: WebSocket;
     public id: string; // session ID
@@ -25,7 +60,7 @@ export class Socket {
     // this variable is used by @iobroker/socket-classes to store the sessionID by authentication
     public _sessionID: string | undefined;
     // this variable is used by @iobroker/socket-classes
-    public _acl: Record<string, any> = null;
+    public _acl: SocketACL | null = null;
 
     public _name: string;
     public conn: { request: { sessionID: string; pathname: string, query?: ParsedUrlQuery } };
