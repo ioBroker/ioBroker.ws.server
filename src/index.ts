@@ -18,7 +18,7 @@ const DEBUG = false;
 export type SocketEventHandler = (...args: any[]) => void;
 
 export interface SocketACL {
-    user: `system.user.${string}`;
+    user: `system.user.${string}` | '';
     groups: `system.group.${string}`[];
     object?: {
         read: boolean;
@@ -64,10 +64,10 @@ export class Socket {
     public _acl: SocketACL | null = null;
     // this variable is used by @iobroker/socket-classes to store subscribe settings
     public subscribe: {
-        fileChange: { regex: RegExp; pattern: string }[];
-        stateChange: { regex: RegExp; pattern: string }[];
-        objectChange: { regex: RegExp; pattern: string }[];
-        log: { regex: RegExp; pattern: string }[];
+        fileChange?: { regex: RegExp; pattern: string }[];
+        stateChange?: { regex: RegExp; pattern: string }[];
+        objectChange?: { regex: RegExp; pattern: string }[];
+        log?: { regex: RegExp; pattern: string }[];
     } | undefined = undefined;
     // this variable is used by @iobroker/socket-classes to store authentication pending
     public _authPending: ((isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void) | undefined;
@@ -486,5 +486,9 @@ export class SocketIO {
     use(cb: (req: IncomingMessage, cb: (err: boolean) => void) => void): SocketIO {
         this.#run.push(cb);
         return this;
+    }
+
+    close(): void {
+        this.#socketsList.forEach(socket => socket.close());
     }
 }
