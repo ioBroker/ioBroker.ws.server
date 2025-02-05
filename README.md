@@ -52,7 +52,7 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.2.2 (2025-02-05)
 
 -   (@GermanBluefox) Added the query path to the socket class
 -   (@GermanBluefox) Added support for different handlers for different paths
