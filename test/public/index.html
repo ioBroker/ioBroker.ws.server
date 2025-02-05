@@ -1,29 +1,30 @@
 <html>
-<head>
-    <script src="socket.io.js"></script>
-</head>
-<body>
-    <div id="status"></div>
-    <script>
-        const socket = window.io.connect(`http://localhost:5000`);
-        function onConnect() {
-            document.getElementById('status').innerHTML += 'Connection established<br />';
-            console.log('Connection established');
-            const num = Math.round(Math.random() * 1000);
-            socket.emit('data', num, (err, data) => {
-                document.getElementById('status').innerHTML += `${new Date().toString()} Response from server: ${err}, ${data}<br />`;
-                console.log(`Response from server: ${err}, ${data}`);
-                if (data === num + 1) {
-                    document.getElementById('status').innerHTML += `Send terminate signal<br />`;
-                    socket.emit('terminate');
-                } else {
-                    document.getElementById('status').innerHTML += `Received invalid response`;
-                }
-            });
-        }
-        document.getElementById('status').innerHTML += 'Waiting for connection<br />';
-        socket.on('connect', onConnect);
-        socket.on('reconnect', onConnect);
-    </script>
-</body>
+    <head>
+        <script src="socket.io.js"></script>
+    </head>
+    <body>
+        <div id="status"></div>
+        <script>
+            const socket = window.io.connect(`http://localhost:5000`);
+            function onConnect() {
+                document.getElementById('status').innerHTML += 'Connection established<br />';
+                console.log('Connection established');
+                const num = Math.round(Math.random() * 1000);
+                socket.emit('data', num, (err, data) => {
+                    document.getElementById('status').innerHTML +=
+                        `${new Date().toString()} Response from server: ${err}, ${data}<br />`;
+                    console.log(`Response from server: ${err}, ${data}`);
+                    if (data === num + 1) {
+                        document.getElementById('status').innerHTML += `Send terminate signal<br />`;
+                        socket.emit('terminate');
+                    } else {
+                        document.getElementById('status').innerHTML += `Received invalid response`;
+                    }
+                });
+            }
+            document.getElementById('status').innerHTML += 'Waiting for connection<br />';
+            socket.on('connect', onConnect);
+            socket.on('reconnect', onConnect);
+        </script>
+    </body>
 </html>

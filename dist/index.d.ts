@@ -61,6 +61,7 @@ export declare class Socket {
             pattern: string;
         }[];
     } | undefined;
+    _authPending: ((isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void) | undefined;
     _name: string;
     conn: {
         request: {

@@ -7,7 +7,7 @@ describe('Communication test', () => {
 
     it('Test', done => {
         const requestListener = (req, res) => {
-            console.log(`${new Date().toISOString()} request by web server "${req.url}`);
+            console.log(`${new Date().toISOString()} [SERVER] request by web server "${req.url}`);
 
             if (req.url === '/socket.io.js.map') {
                 res.writeHead(200);
@@ -38,21 +38,21 @@ describe('Communication test', () => {
 
         // install event handlers on socket connection
         function onConnection(socket, initDone) {
-            console.log(`${new Date().toISOString()} ==> Connected IP: ${socket.connection.remoteAddress}`);
+            console.log(`${new Date().toISOString()} [WSERVER] ==> Connected IP: ${socket.connection.remoteAddress}`);
 
             socket.on('data', (data, cb) => {
-                console.log(`${new Date().toISOString()} Received ${data}`);
+                console.log(`${new Date().toISOString()} [WSERVER] Received ${data}`);
                 cb(null, data + 1);
             });
 
             socket.on('terminate', () => {
-                console.log(`${new Date().toISOString()} Received termination signal`);
+                console.log(`${new Date().toISOString()} [WSERVER] Received termination signal`);
                 webServer.close();
                 done();
             });
 
             socket.on('disconnect', error => {
-                console.log(`${new Date().toISOString()} <== Disconnect from ${socket.connection.remoteAddress}: ${error}`);
+                console.log(`${new Date().toISOString()} [WSERVER] <== Disconnect from ${socket.connection.remoteAddress}: ${error}`);
             });
 
             initDone && initDone();
@@ -64,10 +64,15 @@ describe('Communication test', () => {
 
         // start web server
         webServer.listen(5000, async () => {
-            console.log(`${new Date().toISOString()} Server started on port 5000`);
+            console.log(`${new Date().toISOString()} [SERVER] Server started on port 5000`);
             const browser = await puppeteer.launch({ headless: true });
             const [page] = await browser.pages();
+            page.on('console', msg => console.log(`${new Date().toISOString()} [BROWSER]:`, msg.text()));
+
+            console.log(`${new Date().toISOString()} Open http://localhost:5000`);
             await page.goto('http://localhost:5000');
+            await page.waitForNavigation({ waitUntil: 'load' });
+            console.log(`${new Date().toISOString()} page loaded in browser`);
         });
     }).timeout(40000);
 });

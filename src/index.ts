@@ -55,22 +55,25 @@ export interface SocketACL {
 export class Socket {
     public ws: WebSocket;
     public id: string; // session ID
+
     // this variable is used by @iobroker/socket-classes to store the auth flag
     public _secure: boolean = false;
     // this variable is used by @iobroker/socket-classes to store the sessionID by authentication
     public _sessionID: string | undefined;
-    // this variable is used by @iobroker/socket-classes
+    // this variable is used by @iobroker/socket-classes to store ACL
     public _acl: SocketACL | null = null;
-    // this variable is used by @iobroker/socket-classes
+    // this variable is used by @iobroker/socket-classes to store subscribe settings
     public subscribe: {
         fileChange: { regex: RegExp; pattern: string }[];
         stateChange: { regex: RegExp; pattern: string }[];
         objectChange: { regex: RegExp; pattern: string }[];
         log: { regex: RegExp; pattern: string }[];
     } | undefined = undefined;
-
+    // this variable is used by @iobroker/socket-classes to store authentication pending
+    public _authPending: ((isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void) | undefined;
     // this variable is used by @iobroker/socket-classes
     public _name: string;
+
     public conn: { request: { sessionID: string; pathname: string, query?: ParsedUrlQuery } };
     public connection: { remoteAddress: string };
     /** Query object from URL */

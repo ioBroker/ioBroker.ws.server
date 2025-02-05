@@ -19,10 +19,12 @@ class Socket {
     _secure = false;
     // this variable is used by @iobroker/socket-classes to store the sessionID by authentication
     _sessionID;
-    // this variable is used by @iobroker/socket-classes
+    // this variable is used by @iobroker/socket-classes to store ACL
     _acl = null;
-    // this variable is used by @iobroker/socket-classes
+    // this variable is used by @iobroker/socket-classes to store subscribe settings
     subscribe = undefined;
+    // this variable is used by @iobroker/socket-classes to store authentication pending
+    _authPending;
     // this variable is used by @iobroker/socket-classes
     _name;
     conn;
