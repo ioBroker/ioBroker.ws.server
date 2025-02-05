@@ -1,41 +1,55 @@
 import { type ParsedUrlQuery } from 'node:querystring';
-import type { IncomingMessage } from 'node:http';
-import type { Server as HTTPServer } from 'node:http';
+import type { IncomingMessage, Server as HTTPServer } from 'node:http';
 import type { Server as HTTPSServer } from 'node:https';
 export type SocketEventHandler = (...args: any[]) => void;
-declare class Socket {
+export declare class Socket {
+    #private;
     ws: WebSocket;
     id: string;
     _secure: boolean;
     _sessionID: string | undefined;
     _acl: Record<string, any>;
-    private messageId;
     _name: string;
     conn: {
         request: {
             sessionID: string;
+            pathname: string;
+            query?: ParsedUrlQuery;
         };
     };
-    private pingInterval;
-    private readonly handlers;
-    private lastPong;
     connection: {
         remoteAddress: string;
     };
+    /** Query object from URL */
     query: ParsedUrlQuery;
-    constructor(ws: WebSocket, sessionID: string, query: ParsedUrlQuery, remoteAddress: string);
+    /**
+     *
+     * @param ws WebSocket object from ws package
+     * @param sessionID session ID
+     * @param query query object from URL
+     * @param remoteAddress IP address of the client
+     * @param pathname path of the request URL for different handlers on one server
+     */
+    constructor(ws: WebSocket, sessionID: string, query: ParsedUrlQuery, remoteAddress: string, pathname: string);
+    /**
+     * Do not start ping/pong, do not process any messages and do not send any, as it will be processed by custom handler
+     */
+    enableCustomHandler(onCloseForced?: () => void): void;
+    /**
+     * Install handler on event
+     */
     on(name: string, cb: SocketEventHandler): void;
+    /**
+     * Remove handler from event
+     */
     off(name: string, cb: SocketEventHandler): void;
     emit(name: string, ...args: any[]): void;
-    responseWithCallback(name: string, id: number, ...args: any[]): void;
-    withCallback(name: string, id: number, ...args: any[]): void;
     close(): void;
 }
 export declare class SocketIO {
+    #private;
+    /** This attribute is used to detect ioBroker socket */
     ioBroker: boolean;
-    private handlers;
-    private socketsList;
-    private run;
     engine: {
         clientsCount: number;
     };
@@ -52,4 +66,3 @@ export declare class SocketIO {
     off(name: string, cb: SocketEventHandler): void;
     use(cb: (req: IncomingMessage, cb: (err: boolean) => void) => void): SocketIO;
 }
-export {};

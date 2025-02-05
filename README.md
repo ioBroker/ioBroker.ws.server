@@ -52,6 +52,11 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+-   (@GermanBluefox) Added the query path to the socket class
+-   (@GermanBluefox) Added support for different handlers for different paths
+
 ### 4.1.0 (2024-11-17)
 
 -   (@GermanBluefox) Corrected error with session ID
@@ -63,7 +68,7 @@ webServer.listen(5000);
 
 ### 3.0.0 (2024-10-02)
 
--   (@GermanBluefox) Package was rewritten with typescript
+-   (@GermanBluefox) Package was rewritten with TypeScript
 -   BREAKING CHANGE: import of SocketIO class changed (see example above)
 
 ### 2.1.2 (2023-12-17)
@@ -91,7 +96,7 @@ webServer.listen(5000);
 
 The MIT License (MIT)
 
-Copyright (c) 2020-2024 Bluefox <dogafox@gmail.com>
+Copyright (c) 2020-2025 Bluefox <dogafox@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

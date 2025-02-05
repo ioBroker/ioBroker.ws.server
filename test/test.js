@@ -1,4 +1,3 @@
-const expect = require('chai').expect;
 const { readFileSync } = require('node:fs');
 const puppeteer = require('puppeteer');
 

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SocketIO = void 0;
+exports.SocketIO = exports.Socket = void 0;
 const node_querystring_1 = require("node:querystring");
 const ws_1 = require("ws");
 /** Maximum message size which server accepts */
@@ -21,35 +21,44 @@ class Socket {
     _sessionID;
     // this variable is used by @iobroker/socket-classes
     _acl = null;
-    messageId = 0;
     _name;
     conn;
-    pingInterval;
-    handlers;
-    lastPong = Date.now();
     connection;
+    /** Query object from URL */
     query;
-    constructor(ws, sessionID, query, remoteAddress) {
+    #handlers = {};
+    #messageId = 0;
+    #pingInterval;
+    #lastPong = Date.now();
+    #customHandler = false;
+    /**
+     *
+     * @param ws WebSocket object from ws package
+     * @param sessionID session ID
+     * @param query query object from URL
+     * @param remoteAddress IP address of the client
+     * @param pathname path of the request URL for different handlers on one server
+     */
+    constructor(ws, sessionID, query, remoteAddress, pathname) {
         this.ws = ws;
         this._name = query.name;
         this.query = query;
         this.connection = { remoteAddress };
-        this.handlers = {};
         this.id = sessionID;
         // simulate interface of socket.io
         this.conn = {
-            request: { sessionID },
+            request: { sessionID, pathname, query },
         };
-        this.pingInterval = setInterval(() => {
-            if (Date.now() - this.lastPong > 5000) {
+        this.#pingInterval = setInterval(() => {
+            if (Date.now() - this.#lastPong > 5000) {
                 ws.send(JSON.stringify([MESSAGE_TYPES.PING]));
             }
-            if (Date.now() - this.lastPong > 15000) {
+            if (Date.now() - this.#lastPong > 15000) {
                 this.close();
             }
         }, 5000);
         ws.onmessage = (message) => {
-            this.lastPong = Date.now();
+            this.#lastPong = Date.now();
             if (!message?.data || typeof message.data !== 'string') {
                 console.error(`Received invalid message: ${JSON.stringify(message?.data)}`);
                 return;
@@ -68,16 +77,16 @@ class Socket {
             const args = messageArray[3];
             if (type === MESSAGE_TYPES.CALLBACK) {
                 DEBUG && console.log(name);
-                this.handlers[name] && this.withCallback(name, id, ...args);
+                this.#handlers[name] && this.#withCallback(name, id, ...args);
             }
             else if (type === MESSAGE_TYPES.MESSAGE) {
                 DEBUG && console.log(name);
-                if (this.handlers[name]) {
+                if (this.#handlers[name]) {
                     if (args) {
-                        setImmediate(() => this.handlers[name]?.forEach(cb => cb.apply(this, args)));
+                        setImmediate(() => this.#handlers[name]?.forEach(cb => cb.apply(this, args)));
                     }
                     else {
-                        setImmediate(() => this.handlers[name]?.forEach(cb => cb.call(this)));
+                        setImmediate(() => this.#handlers[name]?.forEach(cb => cb.call(this)));
                     }
                 }
             }
@@ -92,36 +101,71 @@ class Socket {
             }
         };
     }
-    on(name, cb) {
-        if (cb) {
-            this.handlers[name] = this.handlers[name] || [];
-            this.handlers[name].push(cb);
+    /**
+     * Do not start ping/pong, do not process any messages and do not send any, as it will be processed by custom handler
+     */
+    enableCustomHandler(onCloseForced) {
+        if (!this.#customHandler) {
+            if (this.#pingInterval) {
+                clearInterval(this.#pingInterval);
+                this.#pingInterval = null;
+            }
+            this.#customHandler = true;
+            const names = Object.keys(this.#handlers);
+            for (const name of names) {
+                delete this.#handlers[name];
+            }
+            if (onCloseForced) {
+                // Inform custom handler, that ws socket was closed
+                this.#handlers.disconnect = [onCloseForced];
+            }
         }
     }
+    /**
+     * Install handler on event
+     */
+    on(name, cb) {
+        if (this.#customHandler) {
+            throw new Error('Cannot use on() with custom handler');
+        }
+        if (cb) {
+            this.#handlers[name] = this.#handlers[name] || [];
+            this.#handlers[name].push(cb);
+        }
+    }
+    /**
+     * Remove handler from event
+     */
     off(name, cb) {
-        if (this.handlers[name]) {
-            const pos = this.handlers[name].indexOf(cb);
+        if (this.#customHandler) {
+            throw new Error('Cannot use off() with custom handler');
+        }
+        if (this.#handlers[name]) {
+            const pos = this.#handlers[name].indexOf(cb);
             if (pos !== -1) {
-                this.handlers[name].splice(pos, 1);
-                if (!this.handlers[name].length) {
-                    delete this.handlers[name];
+                this.#handlers[name].splice(pos, 1);
+                if (!this.#handlers[name].length) {
+                    delete this.#handlers[name];
                 }
             }
         }
     }
     emit(name, ...args) {
-        this.messageId++;
-        if (this.messageId >= 0xffffffff) {
-            this.messageId = 1;
+        if (this.#customHandler) {
+            throw new Error('Cannot use emit() with custom handler');
+        }
+        this.#messageId++;
+        if (this.#messageId >= 0xffffffff) {
+            this.#messageId = 1;
         }
         if (!args?.length) {
-            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.messageId, name]));
+            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.#messageId, name]));
         }
         else {
-            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.messageId, name, args]));
+            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.#messageId, name, args]));
         }
     }
-    responseWithCallback(name, id, ...args) {
+    #responseWithCallback(name, id, ...args) {
         // error cannot be converted normally, so try to use internal function for it
         if (args && args[0] instanceof Error) {
             args[0] = args[0].toString();
@@ -131,22 +175,25 @@ class Socket {
         }
         this.ws.send(JSON.stringify([MESSAGE_TYPES.CALLBACK, id, name, args]));
     }
-    withCallback(name, id, ...args) {
+    #withCallback(name, id, ...args) {
         if (!args?.length) {
-            setImmediate(() => this.handlers[name]?.forEach(cb => cb.call(this, (...responseArgs) => this.responseWithCallback(name, id, ...responseArgs))));
+            setImmediate(() => this.#handlers[name]?.forEach(cb => cb.call(this, (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs))));
         }
         else {
-            setImmediate(() => this.handlers[name]?.forEach(cb => cb.apply(this, [
+            setImmediate(() => this.#handlers[name]?.forEach(cb => cb.apply(this, [
                 ...args,
-                (...responseArgs) => this.responseWithCallback(name, id, ...responseArgs),
+                (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs),
             ])));
         }
     }
     close() {
-        this.pingInterval && clearInterval(this.pingInterval);
-        this.pingInterval = null;
-        this.handlers.disconnect?.forEach(cb => cb.apply(this));
-        Object.keys(this.handlers).forEach(name => (this.handlers[name] = undefined));
+        if (this.#pingInterval) {
+            clearInterval(this.#pingInterval);
+            this.#pingInterval = null;
+        }
+        this.#handlers.disconnect?.forEach(cb => cb.apply(this));
+        // delete all handlers
+        Object.keys(this.#handlers).forEach(name => (this.#handlers[name] = undefined));
         try {
             this.ws.close();
         }
@@ -155,28 +202,32 @@ class Socket {
         }
     }
 }
+exports.Socket = Socket;
 class SocketIO {
+    /** This attribute is used to detect ioBroker socket */
     ioBroker = true;
-    handlers;
-    socketsList = [];
-    run = [];
     engine;
+    #handlers;
+    #socketsList = [];
+    #run = [];
     sockets;
     constructor(server) {
         const wss = new ws_1.WebSocketServer({
             server,
             verifyClient: (info, done) => {
-                if (this.run.length) {
-                    this.run.forEach(cb => cb(info.req, err => {
+                if (this.#run.length) {
+                    this.#run.forEach(cb => cb(info.req, err => {
                         if (err) {
                             info.req._wsNotAuth = true;
                         }
-                        done && done(true);
-                        done = null;
+                        if (done) {
+                            done(true);
+                            done = null;
+                        }
                     }));
                 }
-                else {
-                    done && done(true);
+                else if (done) {
+                    done(true);
                     done = null;
                 }
             },
@@ -195,13 +246,15 @@ class SocketIO {
             maxPayload: MAX_PAYLOAD,
         });
         wss.on('connection', (ws, request) => {
-            DEBUG && console.log('connected');
+            if (DEBUG) {
+                console.log('connected');
+            }
             if (!request) {
                 console.error('Unexpected behaviour: request is NULL!');
             }
             if (request?._wsNotAuth) {
                 const ip = request.headers['x-forwarded-for'] || request.socket.remoteAddress;
-                this.handlers.error?.forEach(cb => cb('error', `authentication failed for ${ip}`));
+                this.#handlers.error?.forEach(cb => cb('error', `authentication failed for ${ip}`));
                 ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, 401, 'reauthenticate']));
                 setTimeout(() => ws?.close(), 500);
             }
@@ -216,28 +269,29 @@ class SocketIO {
                 catch {
                     query = null;
                 }
-                // do not write here query?.sid otherwise typescript thinks, that query could be null below
-                if (query && query.sid) {
+                if (query?.sid) {
                     const socket = new Socket(ws, 
                     // @ts-expect-error pass the sessionID of HTTP request to socket
-                    request.sessionID || query.sid, query, request.socket.remoteAddress);
-                    this.socketsList.push(socket);
-                    this.sockets.engine.clientsCount = this.socketsList.length;
+                    request.sessionID || query.sid, query, request.socket.remoteAddress, (request?.url || '').split('?')[0]);
+                    this.#socketsList.push(socket);
+                    this.sockets.engine.clientsCount = this.#socketsList.length;
                     ws.onclose = () => {
-                        DEBUG && console.log('closed');
+                        if (DEBUG) {
+                            console.log('closed');
+                        }
                         let i;
-                        for (i = 0; i < this.socketsList.length; i++) {
-                            if (this.socketsList[i].ws === ws) {
-                                this.socketsList[i].close();
-                                this.socketsList.splice(i, 1);
-                                this.sockets.engine.clientsCount = this.socketsList.length;
+                        for (i = 0; i < this.#socketsList.length; i++) {
+                            if (this.#socketsList[i].ws === ws) {
+                                this.#socketsList[i].close();
+                                this.#socketsList.splice(i, 1);
+                                this.sockets.engine.clientsCount = this.#socketsList.length;
                                 return;
                             }
                         }
                     };
                     ws.onerror = error => {
-                        if (this.handlers.error) {
-                            this.handlers.error.forEach(cb => cb('error', error));
+                        if (this.#handlers.error) {
+                            this.#handlers.error.forEach(cb => cb('error', error));
                         }
                         else {
                             console.error(`Web socket error: ${JSON.stringify(error)}`);
@@ -245,7 +299,7 @@ class SocketIO {
                         ws?.close();
                     };
                     // install handlers
-                    if (this.handlers.connection?.length) {
+                    if (this.#handlers.connection?.length) {
                         // we have a race condition here.
                         // If the user is not admin, it will be requested for him the rights and no handlers will be installed.
                         // So we must be sure that all event handlers are installed before sending ___ready___.
@@ -254,12 +308,15 @@ class SocketIO {
                             socket.emit('___ready___');
                             console.warn('Sent ready, but not all handlers installed!');
                         }, 1500); // TODO, This parameter must be configurable
-                        this.handlers.connection.forEach(cb => cb(socket, () => {
+                        this.#handlers.connection.forEach((cb) => cb(socket, (customHandler) => {
                             if (timeout) {
                                 clearTimeout(timeout);
                                 timeout = null;
-                                // say to a client we are ready
-                                socket.emit('___ready___');
+                                // If not custom handler, send ready
+                                if (!customHandler) {
+                                    // say to a client we are ready
+                                    socket.emit('___ready___');
+                                }
                             }
                         }));
                     }
@@ -270,10 +327,10 @@ class SocketIO {
                 else {
                     if (request) {
                         const ip = request.headers['x-forwarded-for'] || request.socket.remoteAddress;
-                        this.handlers.error?.forEach(cb => cb('error', `No sid found from ${ip}`));
+                        this.#handlers.error?.forEach(cb => cb('error', `No sid found from ${ip}`));
                     }
                     else {
-                        this.handlers.error?.forEach(cb => cb('error', 'No sid found'));
+                        this.#handlers.error?.forEach(cb => cb('error', 'No sid found'));
                     }
                     ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, 501, 'error', ['invalid sid']]));
                     setTimeout(() => ws?.close(), 500);
@@ -281,17 +338,17 @@ class SocketIO {
             }
         });
         wss.on('error', (error) => {
-            if (this.handlers.error) {
-                this.handlers.error.forEach(cb => cb('error', error));
+            if (this.#handlers.error) {
+                this.#handlers.error.forEach(cb => cb('error', error));
             }
             else {
                 console.error(`Web socket server error: ${error}`);
             }
         });
         this.sockets = {
-            connected: this.socketsList, // for socket.io 2.0 compatibility
-            sockets: this.socketsList, // for socket.io 4.0 compatibility
-            emit: (name, ...args) => this.socketsList.forEach(socket => socket.emit(name, ...args)),
+            connected: this.#socketsList, // for socket.io 2.0 compatibility
+            sockets: this.#socketsList, // for socket.io 4.0 compatibility
+            emit: (name, ...args) => this.#socketsList.forEach(socket => socket.emit(name, ...args)),
             engine: {
                 clientsCount: 0,
             },
@@ -300,24 +357,24 @@ class SocketIO {
     }
     on(name, cb) {
         if (cb) {
-            this.handlers = this.handlers || {};
-            this.handlers[name] = this.handlers[name] || [];
-            this.handlers[name].push(cb);
+            this.#handlers = this.#handlers || {};
+            this.#handlers[name] = this.#handlers[name] || [];
+            this.#handlers[name].push(cb);
         }
     }
     off(name, cb) {
-        if (this.handlers && this.handlers[name]) {
-            const pos = this.handlers[name].indexOf(cb);
+        if (this.#handlers && this.#handlers[name]) {
+            const pos = this.#handlers[name].indexOf(cb);
             if (pos !== -1) {
-                this.handlers[name].splice(pos, 1);
-                if (!this.handlers[name].length) {
-                    delete this.handlers[name];
+                this.#handlers[name].splice(pos, 1);
+                if (!this.#handlers[name].length) {
+                    delete this.#handlers[name];
                 }
             }
         }
     }
     use(cb) {
-        this.run.push(cb);
+        this.#run.push(cb);
         return this;
     }
 }

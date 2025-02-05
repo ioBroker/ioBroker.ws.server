@@ -1,7 +1,6 @@
 import { parse, type ParsedUrlQuery } from 'node:querystring';
 import { WebSocketServer } from 'ws';
-import type { IncomingMessage } from 'node:http';
-import type { Server as HTTPServer } from 'node:http';
+import type { IncomingMessage, Server as HTTPServer } from 'node:http';
 import type { Server as HTTPSServer } from 'node:https';
 
 /** Maximum message size which server accepts */
@@ -18,7 +17,7 @@ const DEBUG = false;
 
 export type SocketEventHandler = (...args: any[]) => void;
 
-class Socket {
+export class Socket {
     public ws: WebSocket;
     public id: string; // session ID
     // this variable is used by @iobroker/socket-classes to store the auth flag
@@ -28,40 +27,49 @@ class Socket {
     // this variable is used by @iobroker/socket-classes
     public _acl: Record<string, any> = null;
 
-    private messageId: number = 0;
     public _name: string;
-    public conn: { request: { sessionID: string } };
-    private pingInterval: NodeJS.Timeout | null;
-    private readonly handlers: Record<string, SocketEventHandler[]>;
-    private lastPong: number = Date.now();
+    public conn: { request: { sessionID: string; pathname: string, query?: ParsedUrlQuery } };
     public connection: { remoteAddress: string };
-
+    /** Query object from URL */
     public query: ParsedUrlQuery;
 
-    constructor(ws: WebSocket, sessionID: string, query: ParsedUrlQuery, remoteAddress: string) {
+    readonly #handlers: Record<string, SocketEventHandler[]> = {};
+    #messageId: number = 0;
+    #pingInterval: NodeJS.Timeout | null;
+    #lastPong: number = Date.now();
+    #customHandler: boolean = false;
+
+    /**
+     *
+     * @param ws WebSocket object from ws package
+     * @param sessionID session ID
+     * @param query query object from URL
+     * @param remoteAddress IP address of the client
+     * @param pathname path of the request URL for different handlers on one server
+     */
+    constructor(ws: WebSocket, sessionID: string, query: ParsedUrlQuery, remoteAddress: string, pathname: string) {
         this.ws = ws;
         this._name = query.name as string;
         this.query = query;
         this.connection = { remoteAddress };
-        this.handlers = {};
         this.id = sessionID;
 
         // simulate interface of socket.io
         this.conn = {
-            request: { sessionID },
+            request: { sessionID, pathname, query },
         };
 
-        this.pingInterval = setInterval(() => {
-            if (Date.now() - this.lastPong > 5000) {
+        this.#pingInterval = setInterval(() => {
+            if (Date.now() - this.#lastPong > 5000) {
                 ws.send(JSON.stringify([MESSAGE_TYPES.PING]));
             }
-            if (Date.now() - this.lastPong > 15000) {
+            if (Date.now() - this.#lastPong > 15000) {
                 this.close();
             }
         }, 5000);
 
         ws.onmessage = (message: MessageEvent<string>): void => {
-            this.lastPong = Date.now();
+            this.#lastPong = Date.now();
 
             if (!message?.data || typeof message.data !== 'string') {
                 console.error(`Received invalid message: ${JSON.stringify(message?.data)}`);
@@ -82,14 +90,14 @@ class Socket {
 
             if (type === MESSAGE_TYPES.CALLBACK) {
                 DEBUG && console.log(name);
-                this.handlers[name] && this.withCallback(name, id, ...args);
+                this.#handlers[name] && this.#withCallback(name, id, ...args);
             } else if (type === MESSAGE_TYPES.MESSAGE) {
                 DEBUG && console.log(name);
-                if (this.handlers[name]) {
+                if (this.#handlers[name]) {
                     if (args) {
-                        setImmediate(() => this.handlers[name]?.forEach(cb => cb.apply(this, args)));
+                        setImmediate(() => this.#handlers[name]?.forEach(cb => cb.apply(this, args)));
                     } else {
-                        setImmediate(() => this.handlers[name]?.forEach(cb => cb.call(this)));
+                        setImmediate(() => this.#handlers[name]?.forEach(cb => cb.call(this)));
                     }
                 }
             } else if (type === MESSAGE_TYPES.PING) {
@@ -102,38 +110,77 @@ class Socket {
         };
     }
 
-    on(name: string, cb: SocketEventHandler): void {
-        if (cb) {
-            this.handlers[name] = this.handlers[name] || [];
-            this.handlers[name].push(cb);
+    /**
+     * Do not start ping/pong, do not process any messages and do not send any, as it will be processed by custom handler
+     */
+    enableCustomHandler(onCloseForced?: () => void): void {
+        if (!this.#customHandler) {
+            if (this.#pingInterval) {
+                clearInterval(this.#pingInterval);
+                this.#pingInterval = null;
+            }
+            this.#customHandler = true;
+
+            const names: string[] = Object.keys(this.#handlers);
+            for (const name of names) {
+                delete this.#handlers[name];
+            }
+            if (onCloseForced) {
+                // Inform custom handler, that ws socket was closed
+                this.#handlers.disconnect = [onCloseForced];
+            }
         }
     }
 
+    /**
+     * Install handler on event
+     */
+    on(name: string, cb: SocketEventHandler): void {
+        if (this.#customHandler) {
+            throw new Error('Cannot use on() with custom handler');
+        }
+        if (cb) {
+            this.#handlers[name] = this.#handlers[name] || [];
+            this.#handlers[name].push(cb);
+        }
+    }
+
+    /**
+     * Remove handler from event
+     */
     off(name: string, cb: SocketEventHandler): void {
-        if (this.handlers[name]) {
-            const pos = this.handlers[name].indexOf(cb);
+        if (this.#customHandler) {
+            throw new Error('Cannot use off() with custom handler');
+        }
+
+        if (this.#handlers[name]) {
+            const pos = this.#handlers[name].indexOf(cb);
             if (pos !== -1) {
-                this.handlers[name].splice(pos, 1);
-                if (!this.handlers[name].length) {
-                    delete this.handlers[name];
+                this.#handlers[name].splice(pos, 1);
+                if (!this.#handlers[name].length) {
+                    delete this.#handlers[name];
                 }
             }
         }
     }
 
     emit(name: string, ...args: any[]): void {
-        this.messageId++;
-        if (this.messageId >= 0xffffffff) {
-            this.messageId = 1;
+        if (this.#customHandler) {
+            throw new Error('Cannot use emit() with custom handler');
+        }
+
+        this.#messageId++;
+        if (this.#messageId >= 0xffffffff) {
+            this.#messageId = 1;
         }
         if (!args?.length) {
-            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.messageId, name]));
+            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.#messageId, name]));
         } else {
-            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.messageId, name, args]));
+            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.#messageId, name, args]));
         }
     }
 
-    responseWithCallback(name: string, id: number, ...args: any[]): void {
+    #responseWithCallback(name: string, id: number, ...args: any[]): void {
         // error cannot be converted normally, so try to use internal function for it
         if (args && args[0] instanceof Error) {
             args[0] = args[0].toString();
@@ -146,19 +193,19 @@ class Socket {
         this.ws.send(JSON.stringify([MESSAGE_TYPES.CALLBACK, id, name, args]));
     }
 
-    withCallback(name: string, id: number, ...args: any[]): void {
+    #withCallback(name: string, id: number, ...args: any[]): void {
         if (!args?.length) {
             setImmediate(() =>
-                this.handlers[name]?.forEach(cb =>
-                    cb.call(this, (...responseArgs: any[]) => this.responseWithCallback(name, id, ...responseArgs)),
+                this.#handlers[name]?.forEach(cb =>
+                    cb.call(this, (...responseArgs: any[]) => this.#responseWithCallback(name, id, ...responseArgs)),
                 ),
             );
         } else {
             setImmediate(() =>
-                this.handlers[name]?.forEach(cb =>
+                this.#handlers[name]?.forEach(cb =>
                     cb.apply(this, [
                         ...args,
-                        (...responseArgs: any[]) => this.responseWithCallback(name, id, ...responseArgs),
+                        (...responseArgs: any[]) => this.#responseWithCallback(name, id, ...responseArgs),
                     ]),
                 ),
             );
@@ -166,12 +213,15 @@ class Socket {
     }
 
     close(): void {
-        this.pingInterval && clearInterval(this.pingInterval);
-        this.pingInterval = null;
+        if (this.#pingInterval) {
+            clearInterval(this.#pingInterval);
+            this.#pingInterval = null;
+        }
 
-        this.handlers.disconnect?.forEach(cb => cb.apply(this));
+        this.#handlers.disconnect?.forEach(cb => cb.apply(this));
 
-        Object.keys(this.handlers).forEach(name => (this.handlers[name] = undefined));
+        // delete all handlers
+        Object.keys(this.#handlers).forEach(name => (this.#handlers[name] = undefined));
 
         try {
             this.ws.close();
@@ -184,13 +234,15 @@ class Socket {
 type IncomingMessageEx = IncomingMessage & { _wsNotAuth?: boolean };
 
 export class SocketIO {
+    /** This attribute is used to detect ioBroker socket */
     public ioBroker = true;
-    private handlers: { [event: string]: SocketEventHandler[] };
-    private socketsList: Socket[] = [];
-    private run: ((req: IncomingMessage, cb: (err: boolean) => void) => void)[] = [];
     public engine: {
         clientsCount: number;
     };
+
+    #handlers: { [event: string]: SocketEventHandler[] };
+    #socketsList: Socket[] = [];
+    #run: ((req: IncomingMessage, cb: (err: boolean) => void) => void)[] = [];
 
     public sockets: {
         connected: Socket[]; // for socket.io 2.0 compatibility
@@ -205,18 +257,20 @@ export class SocketIO {
         const wss = new WebSocketServer({
             server,
             verifyClient: (info, done) => {
-                if (this.run.length) {
-                    this.run.forEach(cb =>
+                if (this.#run.length) {
+                    this.#run.forEach(cb =>
                         cb(info.req, err => {
                             if (err) {
                                 (info.req as IncomingMessageEx)._wsNotAuth = true;
                             }
-                            done && done(true);
-                            done = null;
+                            if (done) {
+                                done(true);
+                                done = null;
+                            }
                         }),
                     );
-                } else {
-                    done && done(true);
+                } else if (done) {
+                    done(true);
                     done = null;
                 }
             },
@@ -236,7 +290,9 @@ export class SocketIO {
         });
 
         wss.on('connection', (ws: WebSocket, request: IncomingMessageEx) => {
-            DEBUG && console.log('connected');
+            if (DEBUG) {
+                console.log('connected');
+            }
 
             if (!request) {
                 console.error('Unexpected behaviour: request is NULL!');
@@ -245,7 +301,7 @@ export class SocketIO {
             if (request?._wsNotAuth) {
                 const ip: string = (request.headers['x-forwarded-for'] as string) || request.socket.remoteAddress;
 
-                this.handlers.error?.forEach(cb => cb('error', `authentication failed for ${ip}`));
+                this.#handlers.error?.forEach(cb => cb('error', `authentication failed for ${ip}`));
                 ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, 401, 'reauthenticate']));
                 setTimeout(() => ws?.close(), 500);
             } else {
@@ -260,34 +316,36 @@ export class SocketIO {
                     query = null;
                 }
 
-                // do not write here query?.sid otherwise typescript thinks, that query could be null below
-                if (query && query.sid) {
+                if (query?.sid) {
                     const socket = new Socket(
                         ws,
                         // @ts-expect-error pass the sessionID of HTTP request to socket
                         request.sessionID || query.sid,
                         query,
                         request.socket.remoteAddress,
+                        (request?.url || '').split('?')[0],
                     );
-                    this.socketsList.push(socket);
-                    this.sockets.engine.clientsCount = this.socketsList.length;
+                    this.#socketsList.push(socket);
+                    this.sockets.engine.clientsCount = this.#socketsList.length;
 
                     ws.onclose = () => {
-                        DEBUG && console.log('closed');
+                        if (DEBUG) {
+                            console.log('closed');
+                        }
                         let i;
-                        for (i = 0; i < this.socketsList.length; i++) {
-                            if (this.socketsList[i].ws === ws) {
-                                this.socketsList[i].close();
-                                this.socketsList.splice(i, 1);
-                                this.sockets.engine.clientsCount = this.socketsList.length;
+                        for (i = 0; i < this.#socketsList.length; i++) {
+                            if (this.#socketsList[i].ws === ws) {
+                                this.#socketsList[i].close();
+                                this.#socketsList.splice(i, 1);
+                                this.sockets.engine.clientsCount = this.#socketsList.length;
                                 return;
                             }
                         }
                     };
 
                     ws.onerror = error => {
-                        if (this.handlers.error) {
-                            this.handlers.error.forEach(cb => cb('error', error));
+                        if (this.#handlers.error) {
+                            this.#handlers.error.forEach(cb => cb('error', error));
                         } else {
                             console.error(`Web socket error: ${JSON.stringify(error)}`);
                         }
@@ -295,7 +353,7 @@ export class SocketIO {
                     };
 
                     // install handlers
-                    if (this.handlers.connection?.length) {
+                    if (this.#handlers.connection?.length) {
                         // we have a race condition here.
                         // If the user is not admin, it will be requested for him the rights and no handlers will be installed.
                         // So we must be sure that all event handlers are installed before sending ___ready___.
@@ -305,13 +363,16 @@ export class SocketIO {
                             console.warn('Sent ready, but not all handlers installed!');
                         }, 1500); // TODO, This parameter must be configurable
 
-                        this.handlers.connection.forEach(cb =>
-                            cb(socket, () => {
+                        this.#handlers.connection.forEach((cb: (s: Socket, response: () => void) => void): void =>
+                            cb(socket, (customHandler?: boolean): void => {
                                 if (timeout) {
                                     clearTimeout(timeout);
                                     timeout = null;
-                                    // say to a client we are ready
-                                    socket.emit('___ready___');
+                                    // If not custom handler, send ready
+                                    if (!customHandler) {
+                                        // say to a client we are ready
+                                        socket.emit('___ready___');
+                                    }
                                 }
                             }),
                         );
@@ -323,9 +384,9 @@ export class SocketIO {
                         const ip: string =
                             (request.headers['x-forwarded-for'] as string) || request.socket.remoteAddress;
 
-                        this.handlers.error?.forEach(cb => cb('error', `No sid found from ${ip}`));
+                        this.#handlers.error?.forEach(cb => cb('error', `No sid found from ${ip}`));
                     } else {
-                        this.handlers.error?.forEach(cb => cb('error', 'No sid found'));
+                        this.#handlers.error?.forEach(cb => cb('error', 'No sid found'));
                     }
 
                     ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, 501, 'error', ['invalid sid']]));
@@ -336,18 +397,18 @@ export class SocketIO {
         });
 
         wss.on('error', (error: Error): void => {
-            if (this.handlers.error) {
-                this.handlers.error.forEach(cb => cb('error', error));
+            if (this.#handlers.error) {
+                this.#handlers.error.forEach(cb => cb('error', error));
             } else {
                 console.error(`Web socket server error: ${error}`);
             }
         });
 
         this.sockets = {
-            connected: this.socketsList, // for socket.io 2.0 compatibility
-            sockets: this.socketsList, // for socket.io 4.0 compatibility
+            connected: this.#socketsList, // for socket.io 2.0 compatibility
+            sockets: this.#socketsList, // for socket.io 4.0 compatibility
             emit: (name: string, ...args: any[]): void =>
-                this.socketsList.forEach(socket => socket.emit(name, ...args)),
+                this.#socketsList.forEach(socket => socket.emit(name, ...args)),
             engine: {
                 clientsCount: 0,
             },
@@ -358,26 +419,26 @@ export class SocketIO {
 
     on(name: string, cb: SocketEventHandler): void {
         if (cb) {
-            this.handlers = this.handlers || {};
-            this.handlers[name] = this.handlers[name] || [];
-            this.handlers[name].push(cb);
+            this.#handlers = this.#handlers || {};
+            this.#handlers[name] = this.#handlers[name] || [];
+            this.#handlers[name].push(cb);
         }
     }
 
     off(name: string, cb: SocketEventHandler): void {
-        if (this.handlers && this.handlers[name]) {
-            const pos = this.handlers[name].indexOf(cb);
+        if (this.#handlers && this.#handlers[name]) {
+            const pos = this.#handlers[name].indexOf(cb);
             if (pos !== -1) {
-                this.handlers[name].splice(pos, 1);
-                if (!this.handlers[name].length) {
-                    delete this.handlers[name];
+                this.#handlers[name].splice(pos, 1);
+                if (!this.#handlers[name].length) {
+                    delete this.#handlers[name];
                 }
             }
         }
     }
 
     use(cb: (req: IncomingMessage, cb: (err: boolean) => void) => void): SocketIO {
-        this.run.push(cb);
+        this.#run.push(cb);
         return this;
     }
 }
