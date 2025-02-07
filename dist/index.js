@@ -27,6 +27,10 @@ class Socket {
     _authPending;
     // this variable is used by @iobroker/socket-classes
     _name;
+    // this variable is used by @iobroker/socket-classes
+    _lastActivity;
+    // this variable is used by @iobroker/socket-classes
+    _sessionTimer;
     conn;
     connection;
     /** Query object from URL */
@@ -212,7 +216,7 @@ class SocketIO {
     /** This attribute is used to detect ioBroker socket */
     ioBroker = true;
     engine;
-    #handlers;
+    #handlers = {};
     #socketsList = [];
     #run = [];
     sockets;
@@ -220,20 +224,21 @@ class SocketIO {
         const wss = new ws_1.WebSocketServer({
             server,
             verifyClient: (info, done) => {
+                let finished = false;
                 if (this.#run.length) {
                     this.#run.forEach(cb => cb(info.req, err => {
                         if (err) {
                             info.req._wsNotAuth = true;
                         }
-                        if (done) {
+                        if (done && !finished) {
+                            finished = true;
                             done(true);
-                            done = null;
                         }
                     }));
                 }
-                else if (done) {
+                else if (done && !finished) {
+                    finished = true;
                     done(true);
-                    done = null;
                 }
             },
             perMessageDeflate: {
@@ -267,7 +272,7 @@ class SocketIO {
                 let query;
                 try {
                     if (request) {
-                        const queryString = request.url.split('?')[1];
+                        const queryString = (request.url || '').split('?')[1];
                         query = (0, node_querystring_1.parse)(queryString || '');
                     }
                 }
@@ -276,8 +281,8 @@ class SocketIO {
                 }
                 if (query?.sid) {
                     const socket = new Socket(ws, 
-                    // @ts-expect-error pass the sessionID of HTTP request to socket
-                    request.sessionID || query.sid, query, request.socket.remoteAddress, (request?.url || '').split('?')[0]);
+                    // @ts-expect-error sessionID could exists
+                    request.sessionID || query.sid || '', query, request.socket.remoteAddress || '', (request?.url || '').split('?')[0]);
                     this.#socketsList.push(socket);
                     this.sockets.engine.clientsCount = this.#socketsList.length;
                     ws.onclose = () => {
@@ -381,6 +386,9 @@ class SocketIO {
     use(cb) {
         this.#run.push(cb);
         return this;
+    }
+    close() {
+        this.#socketsList.forEach(socket => socket.close());
     }
 }
 exports.SocketIO = SocketIO;

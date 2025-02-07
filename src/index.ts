@@ -63,12 +63,14 @@ export class Socket {
     // this variable is used by @iobroker/socket-classes to store ACL
     public _acl: SocketACL | null = null;
     // this variable is used by @iobroker/socket-classes to store subscribe settings
-    public subscribe: {
-        fileChange?: { regex: RegExp; pattern: string }[];
-        stateChange?: { regex: RegExp; pattern: string }[];
-        objectChange?: { regex: RegExp; pattern: string }[];
-        log?: { regex: RegExp; pattern: string }[];
-    } | undefined = undefined;
+    public subscribe:
+        | {
+              fileChange?: { regex: RegExp; pattern: string }[];
+              stateChange?: { regex: RegExp; pattern: string }[];
+              objectChange?: { regex: RegExp; pattern: string }[];
+              log?: { regex: RegExp; pattern: string }[];
+          }
+        | undefined = undefined;
     // this variable is used by @iobroker/socket-classes to store authentication pending
     public _authPending: ((isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void) | undefined;
     // this variable is used by @iobroker/socket-classes
@@ -78,12 +80,12 @@ export class Socket {
     // this variable is used by @iobroker/socket-classes
     public _sessionTimer: NodeJS.Timeout | undefined;
 
-    public conn: { request: { sessionID: string; pathname: string, query?: ParsedUrlQuery } };
+    public conn: { request: { sessionID: string; pathname: string; query?: ParsedUrlQuery } };
     public connection: { remoteAddress: string };
     /** Query object from URL */
     public query: ParsedUrlQuery;
 
-    readonly #handlers: Record<string, SocketEventHandler[]> = {};
+    readonly #handlers: Record<string, SocketEventHandler[] | undefined> = {};
     #messageId: number = 0;
     #pingInterval: NodeJS.Timeout | null;
     #lastPong: number = Date.now();
@@ -290,7 +292,7 @@ export class SocketIO {
         clientsCount: number;
     };
 
-    #handlers: { [event: string]: SocketEventHandler[] };
+    #handlers: { [event: string]: SocketEventHandler[] } = {};
     #socketsList: Socket[] = [];
     #run: ((req: IncomingMessage, cb: (err: boolean) => void) => void)[] = [];
 
@@ -306,22 +308,23 @@ export class SocketIO {
     constructor(server: HTTPServer | HTTPSServer) {
         const wss = new WebSocketServer({
             server,
-            verifyClient: (info, done) => {
+            verifyClient: (info, done): void => {
+                let finished = false;
                 if (this.#run.length) {
                     this.#run.forEach(cb =>
                         cb(info.req, err => {
                             if (err) {
                                 (info.req as IncomingMessageEx)._wsNotAuth = true;
                             }
-                            if (done) {
+                            if (done && !finished) {
+                                finished = true;
                                 done(true);
-                                done = null;
                             }
                         }),
                     );
-                } else if (done) {
+                } else if (done && !finished) {
+                    finished = true;
                     done(true);
-                    done = null;
                 }
             },
             perMessageDeflate: {
@@ -349,7 +352,8 @@ export class SocketIO {
             }
 
             if (request?._wsNotAuth) {
-                const ip: string = (request.headers['x-forwarded-for'] as string) || request.socket.remoteAddress;
+                const ip: string | undefined =
+                    (request.headers['x-forwarded-for'] as string) || request.socket.remoteAddress;
 
                 this.#handlers.error?.forEach(cb => cb('error', `authentication failed for ${ip}`));
                 ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, 401, 'reauthenticate']));
@@ -359,7 +363,7 @@ export class SocketIO {
 
                 try {
                     if (request) {
-                        const queryString = request.url.split('?')[1];
+                        const queryString = (request.url || '').split('?')[1];
                         query = parse(queryString || '');
                     }
                 } catch {
@@ -369,10 +373,10 @@ export class SocketIO {
                 if (query?.sid) {
                     const socket = new Socket(
                         ws,
-                        // @ts-expect-error pass the sessionID of HTTP request to socket
-                        request.sessionID || query.sid,
+                        // @ts-expect-error sessionID could exists
+                        request.sessionID || query.sid || '',
                         query,
-                        request.socket.remoteAddress,
+                        request.socket.remoteAddress || '',
                         (request?.url || '').split('?')[0],
                     );
                     this.#socketsList.push(socket);
@@ -407,7 +411,7 @@ export class SocketIO {
                         // we have a race condition here.
                         // If the user is not admin, it will be requested for him the rights and no handlers will be installed.
                         // So we must be sure that all event handlers are installed before sending ___ready___.
-                        let timeout = setTimeout(() => {
+                        let timeout: NodeJS.Timeout | null = setTimeout(() => {
                             timeout = null;
                             socket.emit('___ready___');
                             console.warn('Sent ready, but not all handlers installed!');
@@ -431,7 +435,7 @@ export class SocketIO {
                     }
                 } else {
                     if (request) {
-                        const ip: string =
+                        const ip: string | undefined =
                             (request.headers['x-forwarded-for'] as string) || request.socket.remoteAddress;
 
                         this.#handlers.error?.forEach(cb => cb('error', `No sid found from ${ip}`));

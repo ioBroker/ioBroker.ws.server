@@ -3,7 +3,7 @@ import type { IncomingMessage, Server as HTTPServer } from 'node:http';
 import type { Server as HTTPSServer } from 'node:https';
 export type SocketEventHandler = (...args: any[]) => void;
 export interface SocketACL {
-    user: `system.user.${string}`;
+    user: `system.user.${string}` | '';
     groups: `system.group.${string}`[];
     object?: {
         read: boolean;
@@ -44,25 +44,27 @@ export declare class Socket {
     _sessionID: string | undefined;
     _acl: SocketACL | null;
     subscribe: {
-        fileChange: {
+        fileChange?: {
             regex: RegExp;
             pattern: string;
         }[];
-        stateChange: {
+        stateChange?: {
             regex: RegExp;
             pattern: string;
         }[];
-        objectChange: {
+        objectChange?: {
             regex: RegExp;
             pattern: string;
         }[];
-        log: {
+        log?: {
             regex: RegExp;
             pattern: string;
         }[];
     } | undefined;
     _authPending: ((isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void) | undefined;
     _name: string;
+    _lastActivity: number | undefined;
+    _sessionTimer: NodeJS.Timeout | undefined;
     conn: {
         request: {
             sessionID: string;
@@ -118,4 +120,5 @@ export declare class SocketIO {
     on(name: string, cb: SocketEventHandler): void;
     off(name: string, cb: SocketEventHandler): void;
     use(cb: (req: IncomingMessage, cb: (err: boolean) => void) => void): SocketIO;
+    close(): void;
 }
