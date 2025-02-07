@@ -73,6 +73,10 @@ export class Socket {
     public _authPending: ((isUserAuthenticated: boolean, isAuthenticationUsed: boolean) => void) | undefined;
     // this variable is used by @iobroker/socket-classes
     public _name: string;
+    // this variable is used by @iobroker/socket-classes
+    public _lastActivity: number | undefined;
+    // this variable is used by @iobroker/socket-classes
+    public _sessionTimer: NodeJS.Timeout | undefined;
 
     public conn: { request: { sessionID: string; pathname: string, query?: ParsedUrlQuery } };
     public connection: { remoteAddress: string };

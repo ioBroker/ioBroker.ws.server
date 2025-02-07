@@ -52,6 +52,10 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- (@GermanBluefox) Added type definitions used in `@iobroker/socket-classes`
+
 ### 4.2.2 (2025-02-05)
 
 -   (@GermanBluefox) Added the query path to the socket class
