@@ -1,7 +1,9 @@
 import { type ParsedUrlQuery } from 'node:querystring';
+import { type WebSocket } from 'ws';
 import type { IncomingMessage, Server as HTTPServer } from 'node:http';
 import type { Server as HTTPSServer } from 'node:https';
 export type SocketEventHandler = (...args: any[]) => void;
+export type { WebSocket };
 export interface SocketACL {
     user: `system.user.${string}` | '';
     groups: `system.group.${string}`[];

@@ -1,5 +1,5 @@
 import { parse, type ParsedUrlQuery } from 'node:querystring';
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, type WebSocket, type MessageEvent } from 'ws';
 import type { IncomingMessage, Server as HTTPServer } from 'node:http';
 import type { Server as HTTPSServer } from 'node:https';
 
@@ -16,6 +16,8 @@ const MESSAGE_TYPES: Record<string, number> = {
 const DEBUG = false;
 
 export type SocketEventHandler = (...args: any[]) => void;
+
+export type { WebSocket };
 
 export interface SocketACL {
     user: `system.user.${string}` | '';
@@ -120,18 +122,18 @@ export class Socket {
             }
         }, 5000);
 
-        ws.onmessage = (message: MessageEvent<string>): void => {
+        ws.onmessage = (event: MessageEvent): void => {
             this.#lastPong = Date.now();
 
-            if (!message?.data || typeof message.data !== 'string') {
-                console.error(`Received invalid message: ${JSON.stringify(message?.data)}`);
+            if (!event?.data || typeof event.data !== 'string') {
+                console.error(`Received invalid event: ${JSON.stringify(event?.data)}`);
                 return;
             }
             let messageArray: any[];
             try {
-                messageArray = JSON.parse(message.data);
+                messageArray = JSON.parse(event.data);
             } catch {
-                console.error(`Received invalid message: ${JSON.stringify(message)}`);
+                console.error(`Received invalid event: ${JSON.stringify(event)}`);
                 return;
             }
 
@@ -141,10 +143,14 @@ export class Socket {
             const args: any[] = messageArray[3];
 
             if (type === MESSAGE_TYPES.CALLBACK) {
-                DEBUG && console.log(name);
+                if (DEBUG) {
+                    console.log(name);
+                }
                 this.#handlers[name] && this.#withCallback(name, id, ...args);
             } else if (type === MESSAGE_TYPES.MESSAGE) {
-                DEBUG && console.log(name);
+                if (DEBUG) {
+                    console.log(name);
+                }
                 if (this.#handlers[name]) {
                     if (args) {
                         setImmediate(() => this.#handlers[name]?.forEach(cb => cb.apply(this, args)));
@@ -157,7 +163,7 @@ export class Socket {
             } else if (type === MESSAGE_TYPES.PONG) {
                 // lastPong saved
             } else {
-                console.log(`Received unknown message type: ${type}`);
+                console.log(`Received unknown event type: ${type}`);
             }
         };
     }

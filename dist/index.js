@@ -66,18 +66,18 @@ class Socket {
                 this.close();
             }
         }, 5000);
-        ws.onmessage = (message) => {
+        ws.onmessage = (event) => {
             this.#lastPong = Date.now();
-            if (!message?.data || typeof message.data !== 'string') {
-                console.error(`Received invalid message: ${JSON.stringify(message?.data)}`);
+            if (!event?.data || typeof event.data !== 'string') {
+                console.error(`Received invalid event: ${JSON.stringify(event?.data)}`);
                 return;
             }
             let messageArray;
             try {
-                messageArray = JSON.parse(message.data);
+                messageArray = JSON.parse(event.data);
             }
             catch {
-                console.error(`Received invalid message: ${JSON.stringify(message)}`);
+                console.error(`Received invalid event: ${JSON.stringify(event)}`);
                 return;
             }
             const type = messageArray[0];
@@ -85,11 +85,15 @@ class Socket {
             const name = messageArray[2];
             const args = messageArray[3];
             if (type === MESSAGE_TYPES.CALLBACK) {
-                DEBUG && console.log(name);
+                if (DEBUG) {
+                    console.log(name);
+                }
                 this.#handlers[name] && this.#withCallback(name, id, ...args);
             }
             else if (type === MESSAGE_TYPES.MESSAGE) {
-                DEBUG && console.log(name);
+                if (DEBUG) {
+                    console.log(name);
+                }
                 if (this.#handlers[name]) {
                     if (args) {
                         setImmediate(() => this.#handlers[name]?.forEach(cb => cb.apply(this, args)));
@@ -106,7 +110,7 @@ class Socket {
                 // lastPong saved
             }
             else {
-                console.log(`Received unknown message type: ${type}`);
+                console.log(`Received unknown event type: ${type}`);
             }
         };
     }
