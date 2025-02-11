@@ -123,6 +123,10 @@ export class Socket {
         }, 5000);
 
         ws.onmessage = (event: MessageEvent): void => {
+            if (this.#customHandler) {
+                // do not process any messages
+                return;
+            }
             this.#lastPong = Date.now();
 
             if (!event?.data || typeof event.data !== 'string') {
