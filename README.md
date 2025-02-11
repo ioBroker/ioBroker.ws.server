@@ -52,7 +52,7 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.2.6 (2025-02-11)
 
 - (@GermanBluefox) Added type definitions used in `@iobroker/socket-classes`
 
