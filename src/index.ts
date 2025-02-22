@@ -81,6 +81,8 @@ export class Socket {
     public _lastActivity: number | undefined;
     // this variable is used by @iobroker/socket-classes
     public _sessionTimer: NodeJS.Timeout | undefined;
+    // this variable is used by @iobroker/socket-classes
+    public _sessionExpiresAt: number | undefined;
 
     public conn: { request: { sessionID: string; pathname: string; query?: ParsedUrlQuery; headers?: { cookie?: string } } };
     public connection: { remoteAddress: string };

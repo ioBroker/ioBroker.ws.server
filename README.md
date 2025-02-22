@@ -52,7 +52,7 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-### 4.2.7 (2025-02-22)
+### **WORK IN PROGRESS**
 
 - (@GermanBluefox) Added cookie support
 
