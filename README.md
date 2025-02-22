@@ -18,7 +18,7 @@ const requestListener = function (req, res) {
 };
 
 // create web server
-const webServer    = http.createServer(requestListener);
+const webServer = http.createServer(requestListener);
 // create web socket server
 const socketServer = new SocketIO(webServer);
 
@@ -52,6 +52,10 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- (@GermanBluefox) Added cookie support
+
 ### 4.2.6 (2025-02-11)
 
 - (@GermanBluefox) Added type definitions used in `@iobroker/socket-classes`

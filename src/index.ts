@@ -82,7 +82,7 @@ export class Socket {
     // this variable is used by @iobroker/socket-classes
     public _sessionTimer: NodeJS.Timeout | undefined;
 
-    public conn: { request: { sessionID: string; pathname: string; query?: ParsedUrlQuery } };
+    public conn: { request: { sessionID: string; pathname: string; query?: ParsedUrlQuery; headers?: { cookie?: string } } };
     public connection: { remoteAddress: string };
     /** Query object from URL */
     public query: ParsedUrlQuery;
@@ -100,8 +100,9 @@ export class Socket {
      * @param query query object from URL
      * @param remoteAddress IP address of the client
      * @param pathname path of the request URL for different handlers on one server
+     * @param cookie cookie string
      */
-    constructor(ws: WebSocket, sessionID: string, query: ParsedUrlQuery, remoteAddress: string, pathname: string) {
+    constructor(ws: WebSocket, sessionID: string, query: ParsedUrlQuery, remoteAddress: string, pathname: string, cookie?: string) {
         this.ws = ws;
         this._name = query.name as string;
         this.query = query;
@@ -110,7 +111,7 @@ export class Socket {
 
         // simulate interface of socket.io
         this.conn = {
-            request: { sessionID, pathname, query },
+            request: { sessionID, pathname, query, headers: { cookie } },
         };
 
         this.#pingInterval = setInterval(() => {
@@ -380,14 +381,15 @@ export class SocketIO {
                     query = null;
                 }
 
-                if (query?.sid) {
+                if (query && query.sid) {
                     const socket = new Socket(
                         ws,
                         // @ts-expect-error sessionID could exists
                         request.sessionID || query.sid || '',
                         query,
                         request.socket.remoteAddress || '',
-                        (request?.url || '').split('?')[0],
+                        (request.url || '').split('?')[0],
+                        request.headers.cookie,
                     );
                     this.#socketsList.push(socket);
                     this.sockets.engine.clientsCount = this.#socketsList.length;
