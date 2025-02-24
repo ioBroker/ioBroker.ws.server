@@ -84,7 +84,15 @@ export class Socket {
     // this variable is used by @iobroker/socket-classes
     public _sessionExpiresAt: number | undefined;
 
-    public conn: { request: { sessionID: string; pathname: string; query?: ParsedUrlQuery; headers?: { cookie?: string } } };
+    public conn: {
+        request: {
+            sessionID: string;
+            pathname: string;
+            query?: ParsedUrlQuery;
+            headers?: { cookie?: string; authorization?: string };
+        };
+        authorization?: string;
+    };
     public connection: { remoteAddress: string };
     /** Query object from URL */
     public query: ParsedUrlQuery;
@@ -98,22 +106,40 @@ export class Socket {
     /**
      *
      * @param ws WebSocket object from ws package
-     * @param sessionID session ID
-     * @param query query object from URL
-     * @param remoteAddress IP address of the client
-     * @param pathname path of the request URL for different handlers on one server
-     * @param cookie cookie string
+     * @param options Options
+     * @param options.sessionID session ID
+     * @param options.query query object from URL
+     * @param options.remoteAddress IP address of the client
+     * @param options.pathname path of the request URL for different handlers on one server
+     * @param options.cookie cookie string
+     * @param options.authorization headers.authorization string
      */
-    constructor(ws: WebSocket, sessionID: string, query: ParsedUrlQuery, remoteAddress: string, pathname: string, cookie?: string) {
+    constructor(
+        ws: WebSocket,
+        options: {
+            sessionID: string;
+            query: ParsedUrlQuery;
+            remoteAddress: string;
+            pathname: string;
+            cookie?: string;
+            authorization?: string;
+        },
+    ) {
         this.ws = ws;
-        this._name = query.name as string;
-        this.query = query;
-        this.connection = { remoteAddress };
-        this.id = sessionID;
+        this._name = options.query.name as string;
+        this.query = options.query;
+        this.connection = { remoteAddress: options.remoteAddress };
+        this.id = options.sessionID;
 
         // simulate interface of socket.io
         this.conn = {
-            request: { sessionID, pathname, query, headers: { cookie } },
+            request: {
+                sessionID: options.sessionID,
+                pathname: options.pathname,
+                query: options.query,
+                headers: { cookie: options.cookie, authorization: options.authorization },
+            },
+            authorization: options.authorization,
         };
 
         this.#pingInterval = setInterval(() => {
@@ -384,15 +410,15 @@ export class SocketIO {
                 }
 
                 if (query && query.sid) {
-                    const socket = new Socket(
-                        ws,
+                    const socket = new Socket(ws, {
                         // @ts-expect-error sessionID could exists
-                        request.sessionID || query.sid || '',
+                        sessionID: request.sessionID || query.sid || '',
                         query,
-                        request.socket.remoteAddress || '',
-                        (request.url || '').split('?')[0],
-                        request.headers.cookie,
-                    );
+                        remoteAddress: request.socket.remoteAddress || '',
+                        pathname: (request.url || '').split('?')[0],
+                        cookie: request.headers.cookie,
+                        authorization: request.headers.authorization || (request.headers.Authorization as string),
+                    });
                     this.#socketsList.push(socket);
                     this.sockets.engine.clientsCount = this.#socketsList.length;
 

@@ -31,6 +31,8 @@ class Socket {
     _lastActivity;
     // this variable is used by @iobroker/socket-classes
     _sessionTimer;
+    // this variable is used by @iobroker/socket-classes
+    _sessionExpiresAt;
     conn;
     connection;
     /** Query object from URL */
@@ -43,20 +45,29 @@ class Socket {
     /**
      *
      * @param ws WebSocket object from ws package
-     * @param sessionID session ID
-     * @param query query object from URL
-     * @param remoteAddress IP address of the client
-     * @param pathname path of the request URL for different handlers on one server
+     * @param options Options
+     * @param options.sessionID session ID
+     * @param options.query query object from URL
+     * @param options.remoteAddress IP address of the client
+     * @param options.pathname path of the request URL for different handlers on one server
+     * @param options.cookie cookie string
+     * @param options.authorization headers.authorization string
      */
-    constructor(ws, sessionID, query, remoteAddress, pathname) {
+    constructor(ws, options) {
         this.ws = ws;
-        this._name = query.name;
-        this.query = query;
-        this.connection = { remoteAddress };
-        this.id = sessionID;
+        this._name = options.query.name;
+        this.query = options.query;
+        this.connection = { remoteAddress: options.remoteAddress };
+        this.id = options.sessionID;
         // simulate interface of socket.io
         this.conn = {
-            request: { sessionID, pathname, query },
+            request: {
+                sessionID: options.sessionID,
+                pathname: options.pathname,
+                query: options.query,
+                headers: { cookie: options.cookie, authorization: options.authorization },
+            },
+            authorization: options.authorization,
         };
         this.#pingInterval = setInterval(() => {
             if (Date.now() - this.#lastPong > 5000) {
@@ -67,6 +78,10 @@ class Socket {
             }
         }, 5000);
         ws.onmessage = (event) => {
+            if (this.#customHandler) {
+                // do not process any messages
+                return;
+            }
             this.#lastPong = Date.now();
             if (!event?.data || typeof event.data !== 'string') {
                 console.error(`Received invalid event: ${JSON.stringify(event?.data)}`);
@@ -283,10 +298,16 @@ class SocketIO {
                 catch {
                     query = null;
                 }
-                if (query?.sid) {
-                    const socket = new Socket(ws, 
-                    // @ts-expect-error sessionID could exists
-                    request.sessionID || query.sid || '', query, request.socket.remoteAddress || '', (request?.url || '').split('?')[0]);
+                if (query && query.sid) {
+                    const socket = new Socket(ws, {
+                        // @ts-expect-error sessionID could exists
+                        sessionID: request.sessionID || query.sid || '',
+                        query,
+                        remoteAddress: request.socket.remoteAddress || '',
+                        pathname: (request.url || '').split('?')[0],
+                        cookie: request.headers.cookie,
+                        authorization: request.headers.authorization || request.headers.Authorization,
+                    });
                     this.#socketsList.push(socket);
                     this.sockets.engine.clientsCount = this.#socketsList.length;
                     ws.onclose = () => {

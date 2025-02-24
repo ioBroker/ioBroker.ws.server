@@ -52,6 +52,10 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- (@GermanBluefox) Added authentication by headers.
+
 ### 4.2.8 (2025-02-22)
 
 - (@GermanBluefox) Added cookie support

@@ -67,12 +67,18 @@ export declare class Socket {
     _name: string;
     _lastActivity: number | undefined;
     _sessionTimer: NodeJS.Timeout | undefined;
+    _sessionExpiresAt: number | undefined;
     conn: {
         request: {
             sessionID: string;
             pathname: string;
             query?: ParsedUrlQuery;
+            headers?: {
+                cookie?: string;
+                authorization?: string;
+            };
         };
+        authorization?: string;
     };
     connection: {
         remoteAddress: string;
@@ -82,12 +88,22 @@ export declare class Socket {
     /**
      *
      * @param ws WebSocket object from ws package
-     * @param sessionID session ID
-     * @param query query object from URL
-     * @param remoteAddress IP address of the client
-     * @param pathname path of the request URL for different handlers on one server
+     * @param options Options
+     * @param options.sessionID session ID
+     * @param options.query query object from URL
+     * @param options.remoteAddress IP address of the client
+     * @param options.pathname path of the request URL for different handlers on one server
+     * @param options.cookie cookie string
+     * @param options.authorization headers.authorization string
      */
-    constructor(ws: WebSocket, sessionID: string, query: ParsedUrlQuery, remoteAddress: string, pathname: string);
+    constructor(ws: WebSocket, options: {
+        sessionID: string;
+        query: ParsedUrlQuery;
+        remoteAddress: string;
+        pathname: string;
+        cookie?: string;
+        authorization?: string;
+    });
     /**
      * Do not start ping/pong, do not process any messages and do not send any, as it will be processed by custom handler
      */
