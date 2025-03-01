@@ -28,7 +28,7 @@
     "@alcalzone/release-script-plugin-license": "^3.7.0",
     "@iobroker/eslint-config": "^1.0.0",
     "@iobroker/ws": "^2.0.0",
-    "@types/node": "^22.13.1",
+    "@types/node": "^22.13.7",
     "@types/ws": "^8.5.14",
     "mocha": "^11.1.0",
     "puppeteer": "^24.1.1",
