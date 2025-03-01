@@ -21,7 +21,7 @@
     "url": "https://github.com/ioBroker/ioBroker.ws.server"
   },
   "dependencies": {
-    "ws": "^8.18.0"
+    "ws": "^8.18.1"
   },
   "devDependencies": {
     "@alcalzone/release-script": "^3.8.0",
