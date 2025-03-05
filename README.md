@@ -52,6 +52,10 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- (@GermanBluefox) Updated TypeScript to 5.8
+
 ### 4.2.9 (2025-02-24)
 
 - (@GermanBluefox) Added authentication by headers.
