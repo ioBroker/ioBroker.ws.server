@@ -52,7 +52,7 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-### 4.3.0 (2025-03-05)
+### **WORK IN PROGRESS**
 
 - (@GermanBluefox) Updated TypeScript to 5.8
 
