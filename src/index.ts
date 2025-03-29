@@ -180,10 +180,10 @@ export class Socket {
                     console.log(name);
                 }
                 if (this.#handlers[name]) {
-                    this.#withCallback(name, id, ...args);
+                    this.#withCallback(name, false, id, ...args);
                 }
                 if (this.#handlers['*']) {
-                    this.#withCallback('*', id, ...args);
+                    this.#withCallback(name, true, id, ...args);
                 }
             } else if (type === MESSAGE_TYPES.MESSAGE) {
                 if (DEBUG) {
@@ -199,9 +199,10 @@ export class Socket {
                 // If the handler for all message exists, call it
                 if (this.#handlers['*']) {
                     if (args) {
+                        args.unshift(name);
                         setImmediate(() => this.#handlers['*']!.forEach(cb => cb.apply(this, args)));
                     } else {
-                        setImmediate(() => this.#handlers['*']!.forEach(cb => cb.call(this)));
+                        setImmediate(() => this.#handlers['*']!.forEach(cb => cb.call(this, name)));
                     }
                 }
             } else if (type === MESSAGE_TYPES.PING) {
@@ -297,22 +298,42 @@ export class Socket {
         this.ws.send(JSON.stringify([MESSAGE_TYPES.CALLBACK, id, name, args]));
     }
 
-    #withCallback(name: string, id: number, ...args: any[]): void {
+    #withCallback(name: string, wildcards: boolean, id: number, ...args: any[]): void {
         if (!args?.length) {
-            setImmediate(() =>
-                this.#handlers[name]?.forEach(cb =>
-                    cb.call(this, (...responseArgs: any[]) => this.#responseWithCallback(name, id, ...responseArgs)),
-                ),
-            );
+            setImmediate(() => {
+                if (wildcards) {
+                    this.#handlers['*']!.forEach(cb =>
+                        cb.call(this, name, (...responseArgs: any[]) =>
+                            this.#responseWithCallback(name, id, ...responseArgs),
+                        ),
+                    );
+                } else {
+                    this.#handlers[name]!.forEach(cb =>
+                        cb.call(this, (...responseArgs: any[]) =>
+                            this.#responseWithCallback(name, id, ...responseArgs),
+                        ),
+                    );
+                }
+            });
         } else {
-            setImmediate(() =>
-                this.#handlers[name]?.forEach(cb =>
-                    cb.apply(this, [
-                        ...args,
-                        (...responseArgs: any[]) => this.#responseWithCallback(name, id, ...responseArgs),
-                    ]),
-                ),
-            );
+            setImmediate(() => {
+                if (wildcards) {
+                    args.unshift(name);
+                    this.#handlers['*']!.forEach(cb =>
+                        cb.apply(this, [
+                            ...args,
+                            (...responseArgs: any[]) => this.#responseWithCallback(name, id, ...responseArgs),
+                        ]),
+                    );
+                } else {
+                    this.#handlers[name]!.forEach(cb =>
+                        cb.apply(this, [
+                            ...args,
+                            (...responseArgs: any[]) => this.#responseWithCallback(name, id, ...responseArgs),
+                        ]),
+                    );
+                }
+            });
         }
     }
 

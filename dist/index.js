@@ -104,10 +104,10 @@ class Socket {
                     console.log(name);
                 }
                 if (this.#handlers[name]) {
-                    this.#withCallback(name, id, ...args);
+                    this.#withCallback(name, false, id, ...args);
                 }
                 if (this.#handlers['*']) {
-                    this.#withCallback('*', id, ...args);
+                    this.#withCallback(name, true, id, ...args);
                 }
             }
             else if (type === MESSAGE_TYPES.MESSAGE) {
@@ -125,10 +125,11 @@ class Socket {
                 // If the handler for all message exists, call it
                 if (this.#handlers['*']) {
                     if (args) {
+                        args.unshift(name);
                         setImmediate(() => this.#handlers['*'].forEach(cb => cb.apply(this, args)));
                     }
                     else {
-                        setImmediate(() => this.#handlers['*'].forEach(cb => cb.call(this)));
+                        setImmediate(() => this.#handlers['*'].forEach(cb => cb.call(this, name)));
                     }
                 }
             }
@@ -217,15 +218,33 @@ class Socket {
         }
         this.ws.send(JSON.stringify([MESSAGE_TYPES.CALLBACK, id, name, args]));
     }
-    #withCallback(name, id, ...args) {
+    #withCallback(name, wildcards, id, ...args) {
         if (!args?.length) {
-            setImmediate(() => this.#handlers[name]?.forEach(cb => cb.call(this, (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs))));
+            setImmediate(() => {
+                if (wildcards) {
+                    this.#handlers['*'].forEach(cb => cb.call(this, name, (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs)));
+                }
+                else {
+                    this.#handlers[name].forEach(cb => cb.call(this, (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs)));
+                }
+            });
         }
         else {
-            setImmediate(() => this.#handlers[name]?.forEach(cb => cb.apply(this, [
-                ...args,
-                (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs),
-            ])));
+            setImmediate(() => {
+                if (wildcards) {
+                    args.unshift(name);
+                    this.#handlers['*'].forEach(cb => cb.apply(this, [
+                        ...args,
+                        (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs),
+                    ]));
+                }
+                else {
+                    this.#handlers[name].forEach(cb => cb.apply(this, [
+                        ...args,
+                        (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs),
+                    ]));
+                }
+            });
         }
     }
     close() {
