@@ -103,7 +103,12 @@ class Socket {
                 if (DEBUG) {
                     console.log(name);
                 }
-                this.#handlers[name] && this.#withCallback(name, id, ...args);
+                if (this.#handlers[name]) {
+                    this.#withCallback(name, id, ...args);
+                }
+                if (this.#handlers['*']) {
+                    this.#withCallback('*', id, ...args);
+                }
             }
             else if (type === MESSAGE_TYPES.MESSAGE) {
                 if (DEBUG) {
@@ -111,10 +116,19 @@ class Socket {
                 }
                 if (this.#handlers[name]) {
                     if (args) {
-                        setImmediate(() => this.#handlers[name]?.forEach(cb => cb.apply(this, args)));
+                        setImmediate(() => this.#handlers[name].forEach(cb => cb.apply(this, args)));
                     }
                     else {
-                        setImmediate(() => this.#handlers[name]?.forEach(cb => cb.call(this)));
+                        setImmediate(() => this.#handlers[name].forEach(cb => cb.call(this)));
+                    }
+                }
+                // If the handler for all message exists, call it
+                if (this.#handlers['*']) {
+                    if (args) {
+                        setImmediate(() => this.#handlers['*'].forEach(cb => cb.apply(this, args)));
+                    }
+                    else {
+                        setImmediate(() => this.#handlers['*'].forEach(cb => cb.call(this)));
                     }
                 }
             }
@@ -157,7 +171,7 @@ class Socket {
             throw new Error('Cannot use on() with custom handler');
         }
         if (cb) {
-            this.#handlers[name] = this.#handlers[name] || [];
+            this.#handlers[name] ||= [];
             this.#handlers[name].push(cb);
         }
     }

@@ -52,6 +52,10 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- (@GermanBluefox) Added support for the wildcard message handlers
+
 ### 4.3.2 (2025-03-05)
 
 - (@GermanBluefox) Updated TypeScript to 5.8
