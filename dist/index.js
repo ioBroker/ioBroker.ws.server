@@ -37,6 +37,9 @@ class Socket {
     _apiKeyOk;
     // used by cloud
     _subSockets;
+    // used by cloud
+    __apiVersion;
+    ___socket; // store the main socket under ___socket
     conn;
     connection;
     /** Query object from URL */

@@ -69,11 +69,9 @@ export declare class Socket {
     _sessionTimer: NodeJS.Timeout | undefined;
     _sessionExpiresAt: number | undefined;
     _apiKeyOk: boolean | undefined;
-    _subSockets: Record<string, {
-        id: string;
-        ___socket: Socket;
-        _acl: SocketACL | null;
-    }> | undefined;
+    _subSockets: Record<string, Socket> | undefined;
+    __apiVersion: string | undefined;
+    ___socket: Socket | undefined;
     conn: {
         request: {
             sessionID: string;
