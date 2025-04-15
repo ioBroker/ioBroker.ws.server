@@ -87,12 +87,10 @@ export class Socket {
     // used by cloud
     public _apiKeyOk: boolean | undefined;
     // used by cloud
-    public _subSockets: Record<string, {
-        id: string, // socket ID
-        ___socket: Socket, // store the main socket under ___socket
-        _acl: SocketACL | null,
-    }> | undefined;
-
+    public _subSockets: Record<string, Socket> | undefined;
+    // used by cloud
+    public __apiVersion: string | undefined;
+    public ___socket: Socket | undefined // store the main socket under ___socket
 
     public conn: {
         request: {
