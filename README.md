@@ -52,7 +52,7 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.3.5 (2025-04-15)
 
 - (@GermanBluefox) Added types for cloud application (as a client)
 
