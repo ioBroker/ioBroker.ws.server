@@ -33,6 +33,10 @@ class Socket {
     _sessionTimer;
     // this variable is used by @iobroker/socket-classes
     _sessionExpiresAt;
+    // used by cloud
+    _apiKeyOk;
+    // used by cloud
+    _subSockets;
     conn;
     connection;
     /** Query object from URL */
@@ -261,6 +265,10 @@ class Socket {
         catch {
             // ignore
         }
+    }
+    // Indirectly used in cloud
+    disconnect() {
+        this.close();
     }
 }
 exports.Socket = Socket;

@@ -52,6 +52,10 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- (@GermanBluefox) Added types for cloud application (as a client)
+
 ### 4.3.4 (2025-03-29)
 
 - (@GermanBluefox) Added support for the wildcard message handlers

@@ -84,6 +84,16 @@ export class Socket {
     // this variable is used by @iobroker/socket-classes
     public _sessionExpiresAt: number | undefined;
 
+    // used by cloud
+    public _apiKeyOk: boolean | undefined;
+    // used by cloud
+    public _subSockets: Record<string, {
+        id: string, // socket ID
+        ___socket: Socket, // store the main socket under ___socket
+        _acl: SocketACL | null,
+    }> | undefined;
+
+
     public conn: {
         request: {
             sessionID: string;
@@ -353,6 +363,11 @@ export class Socket {
         } catch {
             // ignore
         }
+    }
+
+    // Indirectly used in cloud
+    disconnect() {
+        this.close();
     }
 }
 

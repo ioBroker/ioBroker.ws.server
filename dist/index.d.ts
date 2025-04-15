@@ -68,6 +68,12 @@ export declare class Socket {
     _lastActivity: number | undefined;
     _sessionTimer: NodeJS.Timeout | undefined;
     _sessionExpiresAt: number | undefined;
+    _apiKeyOk: boolean | undefined;
+    _subSockets: Record<string, {
+        id: string;
+        ___socket: Socket;
+        _acl: SocketACL | null;
+    }> | undefined;
     conn: {
         request: {
             sessionID: string;
@@ -118,6 +124,7 @@ export declare class Socket {
     off(name: string, cb: SocketEventHandler): void;
     emit(name: string, ...args: any[]): void;
     close(): void;
+    disconnect(): void;
 }
 export declare class SocketIO {
     #private;
