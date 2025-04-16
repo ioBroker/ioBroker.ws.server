@@ -119,7 +119,7 @@ export declare class Socket {
     /**
      * Remove handler from event
      */
-    off(name: string, cb: SocketEventHandler): void;
+    off(name?: string, cb?: SocketEventHandler): void;
     emit(name: string, ...args: any[]): void;
     close(): void;
     disconnect(): void;

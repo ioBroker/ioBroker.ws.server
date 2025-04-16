@@ -190,7 +190,7 @@ class Socket {
         if (this.#customHandler) {
             throw new Error('Cannot use off() with custom handler');
         }
-        if (this.#handlers[name]) {
+        if (name && this.#handlers[name] && cb) {
             const pos = this.#handlers[name].indexOf(cb);
             if (pos !== -1) {
                 this.#handlers[name].splice(pos, 1);
@@ -198,6 +198,14 @@ class Socket {
                     delete this.#handlers[name];
                 }
             }
+        }
+        else if (name && this.#handlers[name]) {
+            delete this.#handlers[name];
+        }
+        else if (!name) {
+            Object.keys(this.#handlers).forEach(name => {
+                delete this.#handlers[name];
+            });
         }
     }
     emit(name, ...args) {

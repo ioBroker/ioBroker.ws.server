@@ -90,7 +90,7 @@ export class Socket {
     public _subSockets: Record<string, Socket> | undefined;
     // used by cloud
     public __apiVersion: string | undefined;
-    public ___socket: Socket | undefined // store the main socket under ___socket
+    public ___socket: Socket | undefined; // store the main socket under ___socket
 
     public conn: {
         request: {
@@ -261,12 +261,12 @@ export class Socket {
     /**
      * Remove handler from event
      */
-    off(name: string, cb: SocketEventHandler): void {
+    off(name?: string, cb?: SocketEventHandler): void {
         if (this.#customHandler) {
             throw new Error('Cannot use off() with custom handler');
         }
 
-        if (this.#handlers[name]) {
+        if (name && this.#handlers[name] && cb) {
             const pos = this.#handlers[name].indexOf(cb);
             if (pos !== -1) {
                 this.#handlers[name].splice(pos, 1);
@@ -274,6 +274,12 @@ export class Socket {
                     delete this.#handlers[name];
                 }
             }
+        } else if (name && this.#handlers[name]) {
+            delete this.#handlers[name];
+        } else if (!name) {
+            Object.keys(this.#handlers).forEach(name => {
+                delete this.#handlers[name];
+            });
         }
     }
 
