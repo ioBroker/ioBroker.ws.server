@@ -237,10 +237,10 @@ class Socket {
         if (!args?.length) {
             setImmediate(() => {
                 if (wildcards) {
-                    this.#handlers['*'].forEach(cb => cb.call(this, name, (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs)));
+                    this.#handlers['*']?.forEach(cb => cb.call(this, name, (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs)));
                 }
                 else {
-                    this.#handlers[name].forEach(cb => cb.call(this, (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs)));
+                    this.#handlers[name]?.forEach(cb => cb.call(this, (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs)));
                 }
             });
         }
@@ -248,13 +248,13 @@ class Socket {
             setImmediate(() => {
                 if (wildcards) {
                     args.unshift(name);
-                    this.#handlers['*'].forEach(cb => cb.apply(this, [
+                    this.#handlers['*']?.forEach(cb => cb.apply(this, [
                         ...args,
                         (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs),
                     ]));
                 }
                 else {
-                    this.#handlers[name].forEach(cb => cb.apply(this, [
+                    this.#handlers[name]?.forEach(cb => cb.apply(this, [
                         ...args,
                         (...responseArgs) => this.#responseWithCallback(name, id, ...responseArgs),
                     ]));

@@ -316,13 +316,13 @@ export class Socket {
         if (!args?.length) {
             setImmediate(() => {
                 if (wildcards) {
-                    this.#handlers['*']!.forEach(cb =>
+                    this.#handlers['*']?.forEach(cb =>
                         cb.call(this, name, (...responseArgs: any[]) =>
                             this.#responseWithCallback(name, id, ...responseArgs),
                         ),
                     );
                 } else {
-                    this.#handlers[name]!.forEach(cb =>
+                    this.#handlers[name]?.forEach(cb =>
                         cb.call(this, (...responseArgs: any[]) =>
                             this.#responseWithCallback(name, id, ...responseArgs),
                         ),
@@ -333,14 +333,14 @@ export class Socket {
             setImmediate(() => {
                 if (wildcards) {
                     args.unshift(name);
-                    this.#handlers['*']!.forEach(cb =>
+                    this.#handlers['*']?.forEach(cb =>
                         cb.apply(this, [
                             ...args,
                             (...responseArgs: any[]) => this.#responseWithCallback(name, id, ...responseArgs),
                         ]),
                     );
                 } else {
-                    this.#handlers[name]!.forEach(cb =>
+                    this.#handlers[name]?.forEach(cb =>
                         cb.apply(this, [
                             ...args,
                             (...responseArgs: any[]) => this.#responseWithCallback(name, id, ...responseArgs),
