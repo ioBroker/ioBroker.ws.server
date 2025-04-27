@@ -52,7 +52,7 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.3.8 (2025-04-27)
 
 - (@GermanBluefox) Correcting edge cases in the socket server
 
