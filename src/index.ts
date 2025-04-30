@@ -199,18 +199,18 @@ export class Socket {
                 }
                 if (this.#handlers[name]) {
                     if (args) {
-                        setImmediate(() => this.#handlers[name]!.forEach(cb => cb.apply(this, args)));
+                        setImmediate(() => this.#handlers[name]?.forEach(cb => cb.apply(this, args)));
                     } else {
-                        setImmediate(() => this.#handlers[name]!.forEach(cb => cb.call(this)));
+                        setImmediate(() => this.#handlers[name]?.forEach(cb => cb.call(this)));
                     }
                 }
                 // If the handler for all message exists, call it
                 if (this.#handlers['*']) {
                     if (args) {
                         args.unshift(name);
-                        setImmediate(() => this.#handlers['*']!.forEach(cb => cb.apply(this, args)));
+                        setImmediate(() => this.#handlers['*']?.forEach(cb => cb.apply(this, args)));
                     } else {
-                        setImmediate(() => this.#handlers['*']!.forEach(cb => cb.call(this, name)));
+                        setImmediate(() => this.#handlers['*']?.forEach(cb => cb.call(this, name)));
                     }
                 }
             } else if (type === MESSAGE_TYPES.PING) {
