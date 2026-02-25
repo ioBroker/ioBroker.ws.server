@@ -43,7 +43,8 @@
     "build/"
   ],
   "scripts": {
-    "test": "node node_modules/mocha/bin/mocha --exit",
+    "test": "npm run test:integration",
+    "test:integration": "mocha --exit",
     "build": "tsc -p tsconfig.json",
     "lint": "eslint -c eslint.config.mjs",
     "prepublishOnly": "npm run build",

@@ -370,7 +370,7 @@ export class Socket {
     }
 
     // Indirectly used in cloud
-    disconnect() {
+    disconnect(): void {
         this.close();
     }
 }
