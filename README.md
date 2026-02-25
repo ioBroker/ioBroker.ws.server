@@ -52,7 +52,7 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.3.10 (2026-02-25)
 
 - (@GermanBluefox) Updated packages
 
