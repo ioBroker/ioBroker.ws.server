@@ -129,7 +129,7 @@ class Socket {
                         setImmediate(() => this.#handlers[name]?.forEach(cb => cb.call(this)));
                     }
                 }
-                // If the handler for all message exists, call it
+                // If the handler for all messages exists, call it
                 if (this.#handlers['*']) {
                     if (args) {
                         args.unshift(name);

@@ -13,8 +13,8 @@ const http = require('node:http');
 const { SocketIO } = require('@iobroker/ws-server');
 
 const requestListener = function (req, res) {
-  res.writeHead(200);
-  res.end('Hello, World!');
+    res.writeHead(200);
+    res.end('Hello, World!');
 };
 
 // create web server
@@ -52,6 +52,10 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- (@GermanBluefox) Updated packages
+
 ### 4.3.9 (2025-04-30)
 
 - (@GermanBluefox) Correcting edge cases in the socket server
@@ -82,49 +86,49 @@ webServer.listen(5000);
 
 ### 4.2.2 (2025-02-05)
 
--   (@GermanBluefox) Added the query path to the socket class
--   (@GermanBluefox) Added support for different handlers for different paths
+- (@GermanBluefox) Added the query path to the socket class
+- (@GermanBluefox) Added support for different handlers for different paths
 
 ### 4.1.0 (2024-11-17)
 
--   (@GermanBluefox) Corrected error with session ID
+- (@GermanBluefox) Corrected error with session ID
 
 ### 4.0.1 (2024-10-11)
-   
--   (@GermanBluefox) Corrected error with session ID and authentication
--   (@GermanBluefox) Increased a major version to have a clear indicator for the new package
+
+- (@GermanBluefox) Corrected error with session ID and authentication
+- (@GermanBluefox) Increased a major version to have a clear indicator for the new package
 
 ### 3.0.0 (2024-10-02)
 
--   (@GermanBluefox) Package was rewritten with TypeScript
--   BREAKING CHANGE: import of SocketIO class changed (see example above)
+- (@GermanBluefox) Package was rewritten with TypeScript
+- BREAKING CHANGE: import of SocketIO class changed (see example above)
 
 ### 2.1.2 (2023-12-17)
 
--   (foxriver76) increase maximum message size from 100 MB to 500 MB
+- (foxriver76) increase maximum message size from 100 MB to 500 MB
 
 ### 2.1.1 (2023-07-31)
 
--   (@GermanBluefox) Packages updated
+- (@GermanBluefox) Packages updated
 
 ### 2.1.0 (2022-05-19)
 
--   (@GermanBluefox) Support interface of socket.io 4.0
+- (@GermanBluefox) Support interface of socket.io 4.0
 
 ### 2.0.0 (2022-04-24)
 
--   (@GermanBluefox) renamed package into `@iobroker/ws-server`
--   (@GermanBluefox) added error handlers
+- (@GermanBluefox) renamed package into `@iobroker/ws-server`
+- (@GermanBluefox) added error handlers
 
 ### 1.0.1 (2022-01-30)
 
--   (@GermanBluefox) initial commit
+- (@GermanBluefox) initial commit
 
 ## License
 
 The MIT License (MIT)
 
-Copyright (c) 2020-2025 Bluefox <dogafox@gmail.com>
+Copyright (c) 2020-2026 Bluefox <dogafox@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -2,7 +2,7 @@ const { readFileSync } = require('node:fs');
 const puppeteer = require('puppeteer');
 
 describe('Communication test', () => {
-    const { SocketIO } = require('../dist');
+    const { SocketIO } = require('../build');
     const http = require('node:http');
 
     it('Test', done => {
@@ -11,11 +11,11 @@ describe('Communication test', () => {
 
             if (req.url === '/socket.io.js.map') {
                 res.writeHead(200);
-                res.end(readFileSync(`${__dirname}/../node_modules/@iobroker/ws/dist/esm/socket.io.js.map`));
+                res.end(readFileSync(`${__dirname}/../node_modules/@iobroker/ws/build/esm/socket.io.js.map`));
                 return;
             } else if (req.url === '/socket.io.js') {
                 res.writeHead(200);
-                res.end(readFileSync(`${__dirname}/../node_modules/@iobroker/ws/dist/esm/socket.io.js`));
+                res.end(readFileSync(`${__dirname}/../node_modules/@iobroker/ws/build/esm/socket.io.js`));
                 return;
             } else if (req.url === '/' || req.url === '/index.html') {
                 res.writeHead(200);
