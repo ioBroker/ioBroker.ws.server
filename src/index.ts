@@ -348,10 +348,10 @@ export class Socket {
                 if (wildcards) {
                     const wildcardArgs = args.slice();
                     wildcardArgs.unshift(name);
-                    wildcardArgs.push((...responseArgs: any[]) => this.#responseWithCallback(name, id, ...responseArgs));
-                    this.#handlers['*']?.forEach(cb =>
-                        cb.apply(this, wildcardArgs),
+                    wildcardArgs.push((...responseArgs: any[]) =>
+                        this.#responseWithCallback(name, id, ...responseArgs),
                     );
+                    this.#handlers['*']?.forEach(cb => cb.apply(this, wildcardArgs));
                 } else {
                     this.#handlers[name]?.forEach(cb =>
                         cb.apply(this, [
