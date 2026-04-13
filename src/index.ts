@@ -3,7 +3,7 @@ import { WebSocketServer, type WebSocket, type MessageEvent } from 'ws';
 import type { IncomingMessage, Server as HTTPServer } from 'node:http';
 import type { Server as HTTPSServer } from 'node:https';
 
-/** Maximum message size which server accepts */
+/** Maximum message size that the server accepts */
 const MAX_PAYLOAD = 524_288_000;
 
 const MESSAGE_TYPES: Record<string, number> = {
@@ -152,7 +152,12 @@ export class Socket {
 
         this.#pingInterval = setInterval(() => {
             if (Date.now() - this.#lastPong > 5000) {
-                ws.send(JSON.stringify([MESSAGE_TYPES.PING]));
+                try {
+                    ws.send(JSON.stringify([MESSAGE_TYPES.PING]));
+                } catch {
+                    this.close();
+                    return;
+                }
             }
             if (Date.now() - this.#lastPong > 15000) {
                 this.close();
@@ -207,8 +212,9 @@ export class Socket {
                 // If the handler for all messages exists, call it
                 if (this.#handlers['*']) {
                     if (args) {
-                        args.unshift(name);
-                        setImmediate(() => this.#handlers['*']?.forEach(cb => cb.apply(this, args)));
+                        const wildcardArgs = args.slice();
+                        wildcardArgs.unshift(name);
+                        setImmediate(() => this.#handlers['*']?.forEach(cb => cb.apply(this, wildcardArgs)));
                     } else {
                         setImmediate(() => this.#handlers['*']?.forEach(cb => cb.call(this, name)));
                     }
@@ -292,10 +298,14 @@ export class Socket {
         if (this.#messageId >= 0xffffffff) {
             this.#messageId = 1;
         }
-        if (!args?.length) {
-            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.#messageId, name]));
-        } else {
-            this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.#messageId, name, args]));
+        try {
+            if (!args?.length) {
+                this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.#messageId, name]));
+            } else {
+                this.ws.send(JSON.stringify([MESSAGE_TYPES.MESSAGE, this.#messageId, name, args]));
+            }
+        } catch {
+            // socket is closing or closed
         }
     }
 
@@ -305,11 +315,15 @@ export class Socket {
             args[0] = args[0].toString();
         }
 
-        if (!args?.length) {
-            return this.ws.send(JSON.stringify([MESSAGE_TYPES.CALLBACK, id, name]));
+        try {
+            if (!args?.length) {
+                this.ws.send(JSON.stringify([MESSAGE_TYPES.CALLBACK, id, name]));
+            } else {
+                this.ws.send(JSON.stringify([MESSAGE_TYPES.CALLBACK, id, name, args]));
+            }
+        } catch {
+            // socket is closing or closed
         }
-
-        this.ws.send(JSON.stringify([MESSAGE_TYPES.CALLBACK, id, name, args]));
     }
 
     #withCallback(name: string, wildcards: boolean, id: number, ...args: any[]): void {
@@ -332,12 +346,11 @@ export class Socket {
         } else {
             setImmediate(() => {
                 if (wildcards) {
-                    args.unshift(name);
+                    const wildcardArgs = args.slice();
+                    wildcardArgs.unshift(name);
+                    wildcardArgs.push((...responseArgs: any[]) => this.#responseWithCallback(name, id, ...responseArgs));
                     this.#handlers['*']?.forEach(cb =>
-                        cb.apply(this, [
-                            ...args,
-                            (...responseArgs: any[]) => this.#responseWithCallback(name, id, ...responseArgs),
-                        ]),
+                        cb.apply(this, wildcardArgs),
                     );
                 } else {
                     this.#handlers[name]?.forEach(cb =>
@@ -360,7 +373,7 @@ export class Socket {
         this.#handlers.disconnect?.forEach(cb => cb.apply(this));
 
         // delete all handlers
-        Object.keys(this.#handlers).forEach(name => (this.#handlers[name] = undefined));
+        Object.keys(this.#handlers).forEach(name => delete this.#handlers[name]);
 
         try {
             this.ws.close();
@@ -401,21 +414,26 @@ export class SocketIO {
         const wss = new WebSocketServer({
             server,
             verifyClient: (info, done): void => {
-                let finished = false;
                 if (this.#run.length) {
+                    let responded = 0;
+                    const total = this.#run.length;
+                    let hasError = false;
+
                     this.#run.forEach(cb =>
                         cb(info.req, err => {
                             if (err) {
-                                (info.req as IncomingMessageEx)._wsNotAuth = true;
+                                hasError = true;
                             }
-                            if (done && !finished) {
-                                finished = true;
+                            responded++;
+                            if (responded === total) {
+                                if (hasError) {
+                                    (info.req as IncomingMessageEx)._wsNotAuth = true;
+                                }
                                 done(true);
                             }
                         }),
                     );
-                } else if (done && !finished) {
-                    finished = true;
+                } else {
                     done(true);
                 }
             },

@@ -52,6 +52,9 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Corrected some possible errors
+
 ### 4.3.11 (2026-02-25)
 
 - (@GermanBluefox) Updated packages
