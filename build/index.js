@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SocketIO = exports.Socket = void 0;
 const node_querystring_1 = require("node:querystring");
+const node_crypto_1 = require("node:crypto");
 const ws_1 = require("ws");
 /** Maximum message size that the server accepts */
 const MAX_PAYLOAD = 524_288_000;
@@ -14,7 +15,7 @@ const MESSAGE_TYPES = {
 const DEBUG = false;
 class Socket {
     ws;
-    id; // session ID
+    id; // unique transport id of the socket, generated on the server
     // this variable is used by @iobroker/socket-classes to store the auth flag
     _secure = false;
     // this variable is used by @iobroker/socket-classes to store the sessionID by authentication
@@ -53,7 +54,8 @@ class Socket {
      *
      * @param ws WebSocket object from ws package
      * @param options Options
-     * @param options.sessionID session ID
+     * @param options.id unique transport id of the socket. If not provided, a random one is generated
+     * @param options.sessionID authentication session id, only set for a real (cookie) session
      * @param options.query query object from URL
      * @param options.remoteAddress IP address of the client
      * @param options.pathname path of the request URL for different handlers on one server
@@ -65,7 +67,7 @@ class Socket {
         this._name = options.query.name;
         this.query = options.query;
         this.connection = { remoteAddress: options.remoteAddress };
-        this.id = options.sessionID;
+        this.id = options.id || (0, node_crypto_1.randomUUID)();
         // simulate interface of socket.io
         this.conn = {
             request: {
@@ -374,8 +376,18 @@ class SocketIO {
                 }
                 if (query && query.sid) {
                     const socket = new Socket(ws, {
+                        // The socket id is a pure transport identifier and is generated on the
+                        // server. The sid from the query is chosen by the client (@iobroker/ws
+                        // simply uses Date.now()), so it is neither unique nor trustworthy and
+                        // must not be used to route instance messages or to key subscriptions.
+                        id: (0, node_crypto_1.randomUUID)(),
+                        // The sid from the query must not be used as an authentication session
+                        // id either: doing so makes every connection look session-authenticated,
+                        // which shadows the user/pass login and keeps that path unreachable.
+                        // Only a real session, set from the connect.sid cookie during the
+                        // upgrade, belongs here.
                         // @ts-expect-error sessionID could exists
-                        sessionID: request.sessionID || query.sid || '',
+                        sessionID: request.sessionID || '',
                         query,
                         remoteAddress: request.socket.remoteAddress || '',
                         pathname: (request.url || '').split('?')[0],

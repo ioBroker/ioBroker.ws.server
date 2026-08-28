@@ -1,7 +1,7 @@
 import { type ParsedUrlQuery } from 'node:querystring';
-import { type WebSocket } from 'ws';
 import type { IncomingMessage, Server as HTTPServer } from 'node:http';
 import type { Server as HTTPSServer } from 'node:https';
+import { type WebSocket } from 'ws';
 export type SocketEventHandler = (...args: any[]) => void;
 export type { WebSocket };
 export interface SocketACL {
@@ -93,7 +93,8 @@ export declare class Socket {
      *
      * @param ws WebSocket object from ws package
      * @param options Options
-     * @param options.sessionID session ID
+     * @param options.id unique transport id of the socket. If not provided, a random one is generated
+     * @param options.sessionID authentication session id, only set for a real (cookie) session
      * @param options.query query object from URL
      * @param options.remoteAddress IP address of the client
      * @param options.pathname path of the request URL for different handlers on one server
@@ -101,6 +102,7 @@ export declare class Socket {
      * @param options.authorization headers.authorization string
      */
     constructor(ws: WebSocket, options: {
+        id?: string;
         sessionID: string;
         query: ParsedUrlQuery;
         remoteAddress: string;

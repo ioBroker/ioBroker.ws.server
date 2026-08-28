@@ -52,7 +52,15 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- (@joltcoke) The `sid` from the query is not used as an authentication session id anymore. It is always present, so it shadowed the session check in `@iobroker/socket-classes` and made the authentication with `user`/`pass` in the query unreachable. `conn.request.sessionID` is only filled from a real session (the `connect.sid` cookie parsed during the upgrade) now.
+- (@GermanBluefox) `socket.id` is a unique transport id generated on the server now. Before it was the session id (shared by all sockets of one browser session) or, without authentication, the client-supplied `sid`, which is only `Date.now()` and therefore neither unique nor trustworthy for routing instance messages.
+- (@GermanBluefox) Updated packages
+- (@GermanBluefox) A minimal supported Node.js version is 22.19.0 now
+
 ### 4.4.1 (2026-04-13)
+
 - (@GermanBluefox) Corrected some possible errors
 
 ### 4.3.11 (2026-02-25)

@@ -6,10 +6,13 @@
         "skipLibCheck": true,
         "module": "commonjs",
         "outDir": "./build/",
+        "rootDir": "./src/",
         "strict": true,
         "resolveJsonModule": true,
         "target": "esnext",
         "moduleResolution": "node",
+        // "node10" resolution is deprecated in TypeScript 6, but changing it would change the emit
+        "ignoreDeprecations": "6.0",
         "esModuleInterop": true,
         "noImplicitAny": true,
         "useUnknownInCatchVariables": false,

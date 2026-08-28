@@ -1,7 +1,8 @@
 import { parse, type ParsedUrlQuery } from 'node:querystring';
-import { WebSocketServer, type WebSocket, type MessageEvent } from 'ws';
 import type { IncomingMessage, Server as HTTPServer } from 'node:http';
 import type { Server as HTTPSServer } from 'node:https';
+import { randomUUID } from 'node:crypto';
+import { WebSocketServer, type WebSocket, type MessageEvent } from 'ws';
 
 /** Maximum message size that the server accepts */
 const MAX_PAYLOAD = 524_288_000;
@@ -56,7 +57,7 @@ export interface SocketACL {
 
 export class Socket {
     public ws: WebSocket;
-    public id: string; // unique transport id of the socket
+    public id: string; // unique transport id of the socket, generated on the server
 
     // this variable is used by @iobroker/socket-classes to store the auth flag
     public _secure: boolean = false;
@@ -115,7 +116,7 @@ export class Socket {
      *
      * @param ws WebSocket object from ws package
      * @param options Options
-     * @param options.id unique transport id of the socket (the sid from the query)
+     * @param options.id unique transport id of the socket. If not provided, a random one is generated
      * @param options.sessionID authentication session id, only set for a real (cookie) session
      * @param options.query query object from URL
      * @param options.remoteAddress IP address of the client
@@ -126,7 +127,7 @@ export class Socket {
     constructor(
         ws: WebSocket,
         options: {
-            id: string;
+            id?: string;
             sessionID: string;
             query: ParsedUrlQuery;
             remoteAddress: string;
@@ -139,7 +140,7 @@ export class Socket {
         this._name = options.query.name as string;
         this.query = options.query;
         this.connection = { remoteAddress: options.remoteAddress };
-        this.id = options.id;
+        this.id = options.id || randomUUID();
 
         // simulate interface of socket.io
         this.conn = {
@@ -484,12 +485,16 @@ export class SocketIO {
 
                 if (query && query.sid) {
                     const socket = new Socket(ws, {
-                        id: query.sid as string,
-                        // The sid from the query is only a transport identifier. It must not be
-                        // used as an authentication session id: doing so makes every connection
-                        // look session-authenticated, which shadows the user/pass and keeps that
-                        // login path unreachable. Only a real session, set from the connect.sid
-                        // cookie during the upgrade, belongs here.
+                        // The socket id is a pure transport identifier and is generated on the
+                        // server. The sid from the query is chosen by the client (@iobroker/ws
+                        // simply uses Date.now()), so it is neither unique nor trustworthy and
+                        // must not be used to route instance messages or to key subscriptions.
+                        id: randomUUID(),
+                        // The sid from the query must not be used as an authentication session
+                        // id either: doing so makes every connection look session-authenticated,
+                        // which shadows the user/pass login and keeps that path unreachable.
+                        // Only a real session, set from the connect.sid cookie during the
+                        // upgrade, belongs here.
                         // @ts-expect-error sessionID could exists
                         sessionID: request.sessionID || '',
                         query,
