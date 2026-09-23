@@ -45,7 +45,10 @@ class Socket {
     connection;
     /** Query object from URL */
     query;
-    #handlers = {};
+    // The event names come from the client, so this object must not inherit
+    // anything from Object.prototype. Otherwise, a message named e.g. "toString"
+    // would find a "handler" that is not an array.
+    #handlers = Object.create(null);
     #messageId = 0;
     #pingInterval;
     #lastPong = Date.now();
@@ -113,7 +116,9 @@ class Socket {
             const type = messageArray[0];
             const id = messageArray[1];
             const name = messageArray[2];
-            const args = messageArray[3];
+            // A client can send anything, so only a real array is accepted as an
+            // argument list. Everything else is treated like "no arguments".
+            const args = Array.isArray(messageArray[3]) ? messageArray[3] : [];
             if (type === MESSAGE_TYPES.CALLBACK) {
                 if (DEBUG) {
                     console.log(name);
@@ -307,7 +312,7 @@ class SocketIO {
     /** This attribute is used to detect ioBroker socket */
     ioBroker = true;
     engine;
-    #handlers = {};
+    #handlers = Object.create(null);
     #socketsList = [];
     #run = [];
     sockets;

@@ -106,7 +106,13 @@ export class Socket {
     /** Query object from URL */
     public query: ParsedUrlQuery;
 
-    readonly #handlers: Record<string, SocketEventHandler[] | undefined> = {};
+    // The event names come from the client, so this object must not inherit
+    // anything from Object.prototype. Otherwise, a message named e.g. "toString"
+    // would find a "handler" that is not an array.
+    readonly #handlers: Record<string, SocketEventHandler[] | undefined> = Object.create(null) as Record<
+        string,
+        SocketEventHandler[] | undefined
+    >;
     #messageId: number = 0;
     #pingInterval: NodeJS.Timeout | null;
     #lastPong: number = Date.now();
@@ -189,7 +195,9 @@ export class Socket {
             const type: number = messageArray[0];
             const id: number = messageArray[1];
             const name: string = messageArray[2];
-            const args: any[] = messageArray[3];
+            // A client can send anything, so only a real array is accepted as an
+            // argument list. Everything else is treated like "no arguments".
+            const args: any[] = Array.isArray(messageArray[3]) ? messageArray[3] : [];
 
             if (type === MESSAGE_TYPES.CALLBACK) {
                 if (DEBUG) {
@@ -400,7 +408,9 @@ export class SocketIO {
         clientsCount: number;
     };
 
-    #handlers: { [event: string]: SocketEventHandler[] } = {};
+    #handlers: { [event: string]: SocketEventHandler[] } = Object.create(null) as {
+        [event: string]: SocketEventHandler[];
+    };
     #socketsList: Socket[] = [];
     #run: ((req: IncomingMessage, cb: (err: boolean) => void) => void)[] = [];
 

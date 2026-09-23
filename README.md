@@ -52,6 +52,12 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- (@GermanBluefox) Fixed: a malformed frame could terminate the process. The argument list of a message is only used if it really is an array, so a `CALLBACK` frame without arguments or with a non-array argument list does not throw anymore.
+- (@GermanBluefox) Fixed: event names that are inherited from `Object.prototype` (e.g. `toString`, `constructor`, `__proto__`) are handled like any other event name now. Before, such a message from a client terminated the process and `socket.on('constructor', cb)` threw an error.
+- (@GermanBluefox) Added tests for the wire protocol, the connection lifecycle, the middlewares, the `Socket` and `SocketIO` API, the keep alive and the integration with `@iobroker/ws`
+
 ### 4.5.0 (2026-08-28)
 
 - (@joltcoke) The `sid` from the query is not used as an authentication session id anymore. It is always present, so it shadowed the session check in `@iobroker/socket-classes` and made the authentication with `user`/`pass` in the query unreachable. `conn.request.sessionID` is only filled from a real session (the `connect.sid` cookie parsed during the upgrade) now.

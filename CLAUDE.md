@@ -48,7 +48,23 @@ Messages are JSON arrays: `[type, id, name, args?]`
 
 ## Testing
 
-Tests use Puppeteer to launch a headless browser that connects to a real HTTP + WebSocket server on port 5000. The test HTML client is at `test/public/index.html`. Mocha timeout is 40 seconds.
+`npm test` runs Mocha over `test/*.js` (~2 minutes). Tests run against `build/`, so **run `npm run build` first** after changing `src/`.
+
+| File | Scope |
+|------|-------|
+| `test/lib/helpers.js` | Shared helpers — not a spec file (Mocha is not recursive) |
+| `test/socketApi.js` | `Socket` unit tests against a fake WebSocket (no network) |
+| `test/protocol.js` | Wire protocol over a real connection, incl. malformed frames |
+| `test/connection.js` | Handshake, `___ready___`, missing sid, `use()` middleware, socket properties, disconnect |
+| `test/serverApi.js` | `SocketIO` class: socket lists, `clientsCount`, broadcast, `close()` |
+| `test/keepAlive.js` | Ping/pong timing — needs real time (~65 s of the total runtime) |
+| `test/integrationClient.js` | Integration against the real `@iobroker/ws` client, driven in Node |
+| `test/socketId.js` | Socket id is generated on the server, never taken from `?sid=` |
+| `test/test.js` | End-to-end via Puppeteer on port 5000, HTML client in `test/public/index.html` |
+
+`test/lib/helpers.js` provides `createTestServer()` (HTTP + `SocketIO` on an ephemeral port, records all sockets and `error` events) and `TestClient` (a raw protocol client that can send malformed frames and await individual frames).
+
+`@iobroker/ws` is a browser library, but it accepts the WebSocket implementation via `options.WebSocket`, which is how `test/integrationClient.js` drives it under Node.
 
 ## CI
 
