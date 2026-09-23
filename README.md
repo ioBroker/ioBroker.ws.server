@@ -52,7 +52,7 @@ webServer.listen(5000);
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 4.5.1 (2026-09-23)
 
 - (@GermanBluefox) Fixed: a malformed frame could terminate the process. The argument list of a message is only used if it really is an array, so a `CALLBACK` frame without arguments or with a non-array argument list does not throw anymore.
 - (@GermanBluefox) Fixed: event names that are inherited from `Object.prototype` (e.g. `toString`, `constructor`, `__proto__`) are handled like any other event name now. Before, such a message from a client terminated the process and `socket.on('constructor', cb)` threw an error.
