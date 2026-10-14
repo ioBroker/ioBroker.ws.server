@@ -345,7 +345,10 @@ class SocketIO {
                 zlibDeflateOptions: {
                     chunkSize: 1024,
                     memLevel: 9,
-                    level: 9,
+                    // Level 9 bought 3.5 % fewer bytes than 6 for 2.7 times the CPU (measured on a project file of
+                    // 2.2 MB: 228 KB in 32 ms against 236 KB in 12 ms) - on a Raspberry Pi that is the difference
+                    // between a tenth and a third of a second, for every large answer
+                    level: 6,
                 },
                 zlibInflateOptions: {
                     chunkSize: 16 * 1024,

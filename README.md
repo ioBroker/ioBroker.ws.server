@@ -52,6 +52,10 @@ webServer.listen(5000);
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+
+- (@GermanBluefox) Changed: the messages are compressed with level 6 instead of 9. Level 9 saved 3.5 % of the bytes for 2.7 times the CPU (a project file of 2.2 MB: 228 KB in 32 ms against 236 KB in 12 ms on a desktop) - on a Raspberry Pi that is the difference between a tenth and a third of a second for every large answer
+
 ### 4.5.1 (2026-09-23)
 
 - (@GermanBluefox) Fixed: a malformed frame could terminate the process. The argument list of a message is only used if it really is an array, so a `CALLBACK` frame without arguments or with a non-array argument list does not throw anymore.
